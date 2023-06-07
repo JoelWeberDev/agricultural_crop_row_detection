@@ -1,0 +1,17 @@
+{
+    "data": {
+        "Modules": {
+            "cv2": "<module 'cv2' from 'C:\\\\Users\\\\joelw\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\Lib\\\\site-packages\\\\cv2\\\\__init__.py'>",
+            "np": "<module 'numpy' from 'C:\\\\Users\\\\joelw\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\Lib\\\\site-packages\\\\numpy\\\\__init__.py'>",
+            "sys": "<module 'sys' (built-in)>",
+            "os": "<module 'os' (frozen)>",
+            "math": "<module 'math' (built-in)>",
+            "random": "<module 'random' from 'C:\\\\Users\\\\joelw\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\Lib\\\\random.py'>",
+            "time": "<module 'time' (built-in)>",
+            "json": "<module 'json' from 'C:\\\\Users\\\\joelw\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\Lib\\\\json\\\\__init__.py'>",
+            "plt": "<module 'matplotlib.pyplot' from 'C:\\\\Users\\\\joelw\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\Lib\\\\site-packages\\\\matplotlib\\\\pyplot.py'>",
+            "warnings": "<module 'warnings' from 'C:\\\\Users\\\\joelw\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\Lib\\\\warnings.py'>",
+            "ic": "<icecream.icecream.IceCreamDebugger object at 0x000001F2A86E0B90>"
+        }
+    }
+}
