@@ -84,9 +84,9 @@ class ag_lines(object):
 
     def spacing_intervals(self, st_pt):
         st_pt,incpt_lns,srt_lns, disp,minmax= self._proc_lines(st_pt)
-        ic(minmax)
+        # ic(minmax)
         sp_min,sp_max = st_pt[0] - math.ceil((st_pt[0] - minmax[0])/disp)*disp,st_pt[0] + math.ceil((minmax[1] - st_pt[0])/disp )*disp
-        ic(sp_min,sp_max)
+        # ic(sp_min,sp_max)
 
         return np.array([[i, st_pt[1]] for i in np.arange(sp_min,sp_max+disp, disp)])
 
@@ -97,7 +97,7 @@ class ag_lines(object):
         srt_lns = incpt_lns[incpt_lns[:,1].argsort()]
 
         disp = self._calc_row_disparity(st_pt)
-        ic(disp)
+        # ic(disp)
         x_min,x_max = srt_lns[0,1], srt_lns[-1,1]
 
         return st_pt,incpt_lns,srt_lns, disp,(x_min,x_max)
@@ -176,7 +176,7 @@ class ag_lines(object):
         ub,lb = int(val+err),int(val-err)
 
         if lb > arr[-1] or ub < arr[0]:
-            ic(lb,ub,arr)
+            # ic(lb,ub,arr)
             return None,None
         high,low = len(arr)-1,0
         def low_search(low,high):

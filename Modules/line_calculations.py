@@ -112,7 +112,6 @@ def slope_to_theta(slope,deg=False):
 # This determines how to organize the points to ensure lines don't cross and which corner a point is optimally assigned to
 class clockwise_sort(object):
     def __init__(self,pts, img_shape):
-        ic(img_shape)
         self.pts = pts
         self.img_shape = img_shape
         self.center = np.mean(pts,axis=0)

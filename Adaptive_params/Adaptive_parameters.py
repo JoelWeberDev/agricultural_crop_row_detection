@@ -74,6 +74,7 @@ Provided values and dependent varaiables:
  - Estimated row width
  - The max line gap based on the green pixels concentration within the image
  - Number of incremenatal masks
+ - Error margin for the horizonatal variance of a good line from the vanishing point
 
 If there is a very poor amount of green that lies within the row the implication it that the annotater did an aweful job or we have a high weed concentration. In this case we must make the system more robust such 
 that we will not be tricked by this. The following measures will be taken:
@@ -104,7 +105,7 @@ Functions for variables:
     rw Row width (pixels) (directly proportional)
     s Model sensitivity (directly proportional) correlation: 0.10
     fw frame width (pixels) (inversely proportional)
-    s = (tan_inv(rw/fw))*9+s ER| 0.05 < s < 0.5
+    s = (tan_inv(rw/fw))*9+s ER| 0.05 < s < 0.65
 
  Row width error margin:
   This is included because the rows in the image that was annotated may not be fully representative
@@ -144,16 +145,62 @@ Functions for variables:
         ih image height (pixels) 
         rn Row number
         adj adjustment factor (What we need to determine in adaptive_parameters)
+        gr_err the ratio of annotated green to total green 
+        agp average green pixels in the annotated rows
 
-    Curent function: 
-        px_min = (mr*ih)/rn + (mr**2*ih*adj)/rn 
-    New Function: 
-        avw = average width of row (rwt+rwb)/2
-        avgr = average green pixels in a row
-        px_thresh = (avgr/avw)*1-abs(2s)
+    Function:
+        rp = 1.5log1.3((agp*gr_err)/rw)*1+s
     absolute minimum: 
 
-   
+ Max line gap:
+  This is the third parameter of the hough line transform. It will prevent clustering from defining
+  a line. This value will only be fration that then can be applied to the image height.
+  Use cases: incremental_masks ln:57
+  Err towards the higher end rather than the lower
+  Verify that it is lower than the min line len
+
+  Independant variables: 
+    gr ratio of green pixels within the annotated row to the total that were encapsulated by the 
+     annotation (inversely proportional) 0 < gr < 1
+    rw row width (inversely proportional)
+  Function: 
+    mxg = 1/(gr+log20((iw/640)rw)) * 1+(s/2)
+
+ Min line length:
+    This is the fourth parameter of the hough line transform. It will prevent clustering from defining
+    a line. This value will only be fration that then can be applied to the image height.
+    Use cases: incremental_masks ln:57
+
+    Independant variables:
+        gr ratio of green pixels within the annotated row to the total that were encapsulated by the
+
+    Const: The fraction of the row that is the minimum line length
+    Function:
+
+ Incremental mask:
+    The amount of masks that are created in the image semenation process this is basically the 
+    resolution at which the image is processed.
+
+    independant variables:
+        tg total number of green pixels in the image
+
+    icm = int(log3.5(tg) + s) 5 < icm < 11
+
+ Vanishing point error margin:
+    This is the error margin that is used to determine if a line is close enough to the vanishing point
+    It will be multiplied by the image width to determine the allowed variance in pixels.
+
+    independant variables:
+
+ Color range for incremental masks:
+    This is the range of green hue that each of the masks will be split into and thus we need to determine how liberal to make this
+    higher when there are fewer points
+    tgr total green in the image (inversely proportional)
+
+    cr = int(25log15(tgr)*1-(s/2)) 6 < cr < 10
+
+
+
 """
 
 
@@ -185,9 +232,12 @@ from Modules.json_interaction import load_json
 class param_manager(object):
     def __init__(self):
         self.data = load_json('Adaptive_params/Adaptive_values.json',dict_data=True)
+        # ic(self.data.data)
 
     def access(self, key):
-        return self.data.find_key(key, ret_val=True)
+        val = self.data.find_key(key, ret_val=True)
+        assert val != -1, "The key {} does not exist".format(key)
+        return val
 
     def update(self, key, val,title=None):
         # if type(val) == dict:
@@ -199,33 +249,70 @@ class param_manager(object):
             # ic(key, val, title, e)
             self.data.write_json({key:val},data_title=title)
 
+from Modules import json_interaction as ji
 pm = param_manager()
+
 
 
 # sensitivity maps from -0.5 to 0.5
 class value_calculations(object):
-    def __init__(self):
-        self.sens = pm.access("sensitivity")
-        self.row_count = pm.access("row_count")
-        self.rel_bot = pm.access("avg_bot_width_pxls")
-        self.rel_top = pm.access("avg_top_width_pxls")
+    def __init__(self,ui=False,efficiency=False):
+        self.im_wid,self.im_height = pm.access("im_dims")[0],pm.access("im_dims")[1]
+        # assert self.im_wid == img.shape[1] and self.im_height == img.shape[0], "The image dimensions do not match the ones in the json file"
+        if ui:
+            self._verify_spacings()
+
+        self.load_hough_vals()
+        if not efficiency:
+            self.load_vals()
+
+
+    def load_hough_vals(self):
+        self.err_green = pm.access("err_green")
+        self.sense = pm.access("sensitivity")
+        self.row_count = pm.access("row_num")
+        self.rel_bot = pm.access("avg_bot_width_pxl")
+        self.rel_top = pm.access("avg_top_width_pxl")
+        self.avg_row_wid = (self.rel_bot+self.rel_top)/2
+
+        self.mes_green = pm.access("annotated_green")
+        self.annot_pts = pm.access("all_annot_pts")
+        self.green_ratio = self.calc_avgs(self.mes_green,self.annot_pts)
+
+    def determine_hough(self,tot_pts):
+        return (self.row_pixels(tot_pts),self.min_line_length(),self.max_line_gap())
+
+    def load_vals(self):
+
+        self.calc_vals = {
+            "slope_error":self.slope_perc,
+            "inlier_coeff":self.inlier_coeff,
+            # "width_adjust":self.width_adj,
+            # "row_pixels":self.row_pixels,
+            "max_line_gap":self.max_line_gap,
+            "min_line_len":self.min_line_length,
+            "incremental_masks":self.incremental_masks,
+            "vanishing_point_error":self.vanishing_point_error,
+            "err_green":self.annot_green_err,
+            "color_range":self.inc_color_steps
+        }
+
+        self.total_green = pm.access("all_green")
+        
+        self.avg_annot_green = self.calc_avgs(self.mes_green)
+        self.avg_tot_pts = self.calc_avgs(self.annot_pts)
+        self.avg_tot_green = self.calc_avgs(self.total_green)
+        self.noise_ratio = self.calc_avgs(self.mes_green,self.total_green)
+
         self.spacing = pm.access("avg_spacing_pxls")
         self.plant_size = pm.access("plant_size")
         self.unit = pm.access("unit")
         # All the green points that were included in the annotations
-        self.mes_green = pm.access("annotated_green")
-        self.total_green = pm.access("all_green")
-        self.annot_pts = pm.access("all_annot_pts")
-
-        self.im_wid,self.im_height = pm.access("img_dims")[0],pm.access("img_dims")[1]
-
-        self.avg_annot_green = self.calc_avgs(self.mes_green)
-        self.avg_tot_pts = self.calc_avgs(self.annot_pts)
-        self.avg_tot_green = self.calc_avgs(self.total_green)
 
         self.adj_bot_coeff = self.width_adj(self.rel_bot)
 
 
+        
     # Takes the average of the value given and divides it by the denotmontaor liste or the number of rows if no denomonator is provided
     def calc_avgs(self,val,denom=None):
         if denom == None:
@@ -246,37 +333,73 @@ class value_calculations(object):
                 return "Good" 
             return val
 
+    def _verify_spacings(self):
+        theor_spacing = pm.access("spacing")
+        abs_spacing = pm.access("avg_spacing_mm")
+        return self.perc_diff(abs_spacing,theor_spacing)
+
+    def write_json(self):
+        for key,val in self.calc_vals.items():
+            pm.update(key,val(),title="Adaptive_values")
+
     def slope_perc(self,m=9):
-        val = (math.atan(self.rel_bot/self.im_wid))*(m+self.sens)
-        return self._verify_range(val,0.05,0.5)
+        val = (math.atan(self.rel_bot/self.im_wid))*(m+self.sense)
+        return self._verify_range(val,0.05,0.65)
         
     def inlier_coeff(self):
-        val = (self.rel_bot/2/self.spacing)*(1+self.sens)
+        val = (self.rel_bot/2/self.spacing)*(1+self.sense)
         return self._verify_range(val,0.1,0.5)
 
     def width_adj(self,wid):
-        val = 0.5*math.sqrt(self.spacing)*math.log(wid)*(1+self.sens)
+        val = 0.5*math.sqrt(self.spacing)*math.log(wid)*(1+self.sense)
         if self._verify_range(val/self.spacing,0.1,0.75,cond=True) == "High":
             return self.spacing*0.4
         return self._verify_range(val/wid,0.1,0.75)
 
-    def row_pixels(self):
-        val = (self.avg_annot_green/((self.rel_bot+self.rel_top)/2))*(1-abs(self.sens*2))
-        min_val = math.log(self.avg_annot_green,3) 
-        if val < min_val:
-            return min_val
+    # The calculations for this value is actually done in incremental_masks.py since there are factors 
+    # in each individual mask that should be processed and taken into account
+    def row_pixels(self,gr_pts):
+        gr_pts_rows = gr_pts/self.row_count
+        ic(gr_pts_rows,self.err_green,self.avg_row_wid,self.sense)
+        val = round(math.log((8*(gr_pts_rows*20*self.err_green)/self.avg_row_wid)+(self.avg_row_wid/1000),1.5)*(1-(self.sense/2))) if gr_pts> 300 else 3
+
+        if self.avg_row_wid < 10:
+            val /= 2
+        # ic(self.avg_row_wid,self.avg_annot_green,self.sense,self.row_count)
+        # val = (self.avg_annot_green/((self.avg_row_wid)/2))*(1-abs(self.sense*2))
+        return self._verify_range(val, 5,self.im_height/2)
+
+    # This calculation should be done in incremental_masks.py since the value is dependent on the number of masks
+    def max_line_gap(self):
+        val = self._verify_range(self.min_line_length()/2,0.2,0.4)
+        return round(val*self.im_height)
+
+    def min_line_length(self):    
+        val = self._verify_range(1/(self.green_ratio + math.log((self.im_wid/640)*self.avg_row_wid,15))*(1+(self.sense/2)),0.3,0.8)
+        # val = self._verify_range(self.green_ratio, 0.3,0.8)*(1+(self.sense/2))
+        return round(val*self.im_height)
+
+    # Change the log value to make the number of masks more or less
+    def incremental_masks(self):
+        return self._verify_range(round(math.log(self.total_green,1.8)+self.sense),7,21)
+
+    def inc_color_steps(self):
+        val = round(math.log(30,self.total_green)*25*(1+(self.sense/2)))
+        ic(val)
+        return self._verify_range(val,6,12)
+
+    def vanishing_point_error(self):
+        val = (self.rel_bot*1+self.sense)*1.15 # ** Perhaps some action may be neccessary here on the 
+        # integration of the sensor values to ensure that a negative numer will not be excessivly 
+        # rigourous
         return val
-    
 
-    """
-    The following parameters need to be determined:
-    - 
-    """
-    def hough_params(self):
-        pass
-    
+    def annot_green_err(self):
+        val = self.mes_green/self.total_green
+        return self._verify_range(val,0.3,1) 
 
-
+    def perc_diff(self, val1, val2):
+        return abs(val1-val2)/val1
 
 
 
@@ -284,5 +407,5 @@ if __name__ == "__main__":
     import sys, os 
     from icecream import ic
     js = param_manager()
-    ic(js.access("Focal_length"))
-    js.update("Focal_length", 1.3, "Camera")
+    vc = value_calculations()    
+    vc.write_json()

@@ -77,9 +77,13 @@ The filters that the image passes through
  3. Blur 
  4. 
 """
-def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, noise_tst = True):
+def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, noise_tst = True,hough_cmd = "avg"):
+
+
+    no_noise = img.copy()
     if noise_tst:
-       img = noise(img) 
+        img = noise(img) 
+    no_noise = pre_process(no_noise, des=["resize","mask"])
     img = pre_process(img, des=["resize"])
 
     # Initailize the contour class:
@@ -90,9 +94,13 @@ def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, no
     increments = map()
     org = pre_process(img, des=["kernel","mask"],upper=upper,lower=lower,colors=True)
     ret = {"org":img ,"mask_init":org}
+    # ret["org"] = img  
+    # ret["mask_init"] = org
 
     # To group lines change the command from "none" to "avg"
-    imgs = hough(img,org,cmd = "avg")
+    # add "disp_steps" to display the layers of masks to the output
+    # imgs = hough(img,org,no_noise,hough_cmd)
+    imgs = hough(img,org,no_noise,hough_cmd,"disp_steps")
     up = upper[0]
     low= lower[0]
 
@@ -106,7 +114,7 @@ def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, no
     imgs.slope_filter(total_mask[0],total_mask[1])
 
     # for i in range(1,resolution+1):
-    for v in imgs.color_splits(7,10):
+    for v in imgs.color_splits(30,12):
 
         up = np.array([v[1],upper[1],upper[2]])
         low = np.array([v[0],lower[1],lower[2]])
@@ -126,14 +134,16 @@ def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, no
 
     # Create a mask for the image
     
-    total_lns = imgs.good_lns
-    res_img = org.copy()
+    if hough_cmd == "avg":
+        total_lns = imgs.good_lns
+        res_img = org.copy()
 
-    final_rows = agl(img, total_lns)
-    pts, gr_lines = final_rows.calc_pts([0,img.shape[0]])
+        final_rows = agl(img, total_lns)
+        pts, gr_lines = final_rows.calc_pts([0,img.shape[0]])
 
-    res = final_rows.disp_pred_lines(pts)
-    imgs.ret["final"] = imgs.group_lns(gr_lines,res_img,grp = False)
+        res = final_rows.disp_pred_lines(pts)
+        # ic(gr_lines)
+        imgs.ret["final"] = imgs.group_lns(gr_lines,res_img,grp = False)
 
     return imgs.ret
 

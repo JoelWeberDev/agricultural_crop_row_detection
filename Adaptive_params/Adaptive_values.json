@@ -14,7 +14,7 @@
             "kernel_factor": 200
         },
         "user_input": {
-            "sensitivity": 0.5,
+            "sensitivity": 0.0,
             "unit": "cm",
             "row_count": 2,
             "spacing": 18,
@@ -29,7 +29,7 @@
             "neighbor_coefficient": 0.25
         },
         "line_groups": {
-            "intercept_perc": 0.01,
+            "intercept_perc": 0.05,
             "slope_perc": 0.2
         },
         "vanishing_calcs": {
@@ -90,6 +90,16 @@
             "avg_spacing_pxls": 58,
             "all_annot_pts": 120446.0,
             "all_green": 54234.0
+        },
+        "Adaptive_values": {
+            "slope_error": 0.43513809264290054,
+            "inlier_coeff": 0.26695936784015767,
+            "max_line_gap": 0.31278541628085194,
+            "min_line_len": 0.6255708325617039,
+            "vanishing_point_error": 35.61237966987703,
+            "incremental_masks": 19,
+            "err_green": 0.8973890917136852,
+            "color_range": 8
         }
     }
 }

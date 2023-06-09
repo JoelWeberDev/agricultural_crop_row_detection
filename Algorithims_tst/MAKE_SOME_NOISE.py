@@ -18,7 +18,7 @@ def noise(img, noise_pts= 3000, min_pt_sz = 1 , max_pt_sz = 11):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     upper=np.array([75,255,255])
     lower = np.array([30,50,50])
-    ic(img.shape)
+    # ic(img.shape)
 
     if min_pt_sz%2 == 0:
         min_pt_sz+=1

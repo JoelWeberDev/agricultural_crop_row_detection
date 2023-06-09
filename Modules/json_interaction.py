@@ -16,7 +16,7 @@ import numpy as np
 from icecream import ic
 
 class load_json(object):
-    def __init__(self,json_path = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Cascade_Classifier/Modules/Camera_Calib/Camara_specifications.json",dict_data=False):
+    def __init__(self,json_path = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/python_soybean_c/Modules/Camera_Calib/Cam_specs_dict.json",dict_data=False):
         self.path = json_path
         self.dict_data = dict_data
         self.load_data()
@@ -119,7 +119,7 @@ class load_json(object):
 
 
 def main():
-    loader = load_json("Adaptive_params\Adaptive_values.json",dict_data=True)
+    loader = load_json("Adaptive_params/Adaptive_values.json",dict_data=True)
     # test the reader:
     val = loader.find_key("Focal length",ret_val=True)
     ic(val)

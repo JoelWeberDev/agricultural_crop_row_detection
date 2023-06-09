@@ -44,10 +44,14 @@ class group_lns(object):
 
 
     # Problem: The array is not being properly sorted thus we need to fix that next.
-    def groupLines(self,lines,img_shape = (720,1280)):
+    
+    def groupLines(self,lines,img_shape = None):
         # ic(len(lines))
-
-        int_thresh = self.ap.access("intercept_perc")*img_shape[1]
+        if img_shape == None:
+            img_shape = self.ap.access("im_dims")
+        
+        int_thresh = self.ap.access("intercept_perc")*img_shape[0]
+        ic(int_thresh)
         slp_thresh = self.ap.access("slope_perc")
 
         self.groups = []
@@ -74,28 +78,29 @@ class group_lns(object):
 
         # ** Potential problem: The slope filter must be adaptive as the diffence between slopes becomes more radical as they get steeper
         # Generate a function form the camera calculations that will determine the upper and lower range that the slopes should be within 
-        # The slope filter must be made adaptive becaue slopes like 50 abd - 50 are actually very similar whereas something like 0.5 and -0.5 are very different
+        # The slope filter must be made adaptive becaue slopes like 50 abs - 50 are actually very similar whereas something like 0.5 and -0.5 are very different
 
-        for gr1 in grps:
-            if gr1.size == 0: 
-                continue
-            # sort gr1 by slope 
-            srt_gr1 = gr1[gr1[:,0].argsort()]
-            self.groups.append([list(srt_gr1[0])])
-            prev_sl = gr1[0,0]
-            self.row_num += 1
-            for i, ln in enumerate(srt_gr1):
-                if i == 0:
-                    continue
-                if abs(ln[0] / prev_sl)-1 > slp_thresh:
-                    self.groups.append([ln])
-                    self.row_num += 1
-                else:
-                    self.groups[self.row_num-1].append(list(ln))
-                self.prev_sl= ln[0]
+        # for gr1 in grps:
+        #     if gr1.size == 0: 
+        #         continue
+        #     # sort gr1 by slope 
+        #     srt_gr1 = gr1[gr1[:,0].argsort()]
+        #     self.groups.append([list(srt_gr1[0])])
+        #     prev_sl = gr1[0,0]
+        #     self.row_num += 1
+        #     for i, ln in enumerate(srt_gr1):
+        #         if i == 0:
+        #             continue
+        #         if abs(ln[0] / prev_sl)-1 > slp_thresh:
+        #             self.groups.append([ln])
+        #             self.row_num += 1
+        #         else:
+        #             self.groups[self.row_num-1].append(list(ln))
+        #         self.prev_sl= ln[0]
 
         # ic(self.groups)
-        return self.groups        
+        # return self.groups        
+        return grps
     
 
 

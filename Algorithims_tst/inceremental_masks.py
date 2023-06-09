@@ -26,19 +26,23 @@ from Modules.Image_Processor import procImgs as proc
 from Modules import line_calculations as lc
 
 from Adaptive_params import Adaptive_parameters as ap
-
+adp_vals = ap.value_calculations(efficiency=True)
 
 # from Modules import display_frames as disp
 
 class hough_assessment(object):
-    def __init__(self,org,mask_init=None,cmd = "avg") -> None:
+    def __init__(self,org,mask_init=None,pure=None,*args) -> None:
 
         if mask_init is None:
             mask_init = proc(org,'mask')(np.array([85,255,255]),np.array([30,50,50]))
+        if pure is None:
+            pure = org
 
-        self.ret = {"org":org,"mask_init":mask_init}
+        self.args = args
+
+        self.ret = {"org":org, "pure":pure,"mask_init":mask_init}
         
-        self.cmd = cmd
+        # self.cmd = cmd
 
         self.im_count = 0
         self.total_pts = np.sum(mask_init >0)
@@ -50,15 +54,19 @@ class hough_assessment(object):
         self.im_size = self.ret['org'].shape
 
         self.adaptive_params = ap.param_manager()
+        self.row_num = self.adaptive_params.access("row_num")
+        self.err_green = self.adaptive_params.access("err_green")
+        self.sense = self.adaptive_params.access("sensitivity")
 
     def appy_ln(self,mask,probibalistic=True):
         import time 
 
         # A method to use the conventional method was also developed however the time and complextiy that it requires far exceeds that of the probibalistic method. The only way in which the simple HoughLines could 
         # be superior is if the theta values were made very rigid
-        params = self.get_params(mask)
-        if not probibalistic:
+        params = adp_vals.determine_hough(np.sum(mask> 0))
+        # params = self.get_params(mask)
 
+        if not probibalistic:
             start = time.time()
             thetas = self.get_theta_bounds()
             lines = cv2.HoughLines(mask, 1, np.pi / 120, params[0], thetas[0], thetas[1])
@@ -97,27 +105,22 @@ class hough_assessment(object):
             x0 = a*r
             y0 = b*r
             ret_lns.append(np.array([[int(x0 + 1000*(-b)), int(y0 + 1000*(a)),int(x0 - 1000*(-b)), int(y0 - 1000*(a))],[]]))
-        ic(ret_lns) 
+        # ic(ret_lns) 
         return ret_lns 
             
 
     # Method outline: This should assess the size of the rows determined from the user inputs and the camera parameters to determine approxomately how many points should consitute a row
     #  * We could also use this to determine the size of kernel that is fitting to properly group blobs
-    def get_params(self,cur_mask):
-        # self.cam_calcs(cur_mask)
-        # These values change based on the input of the mask
-        try:
-            row_num = self.adaptive_params.access("row_num")
-        except UserWarning:
-            print("using the defaul row number of 4")
-            row_num = 4
+    # def get_params(self,cur_mask):
+    #     # self.cam_calcs(cur_mask)
+    #     # These values change based on the input of the mask
 
-        self.cur_pts = np.sum(cur_mask > 0) #** This could potentially be made more efficient by using an exisiting mask iteration somewhere up the chain of processing
-        self.cur_ratio = self.cur_pts/self.total_pts
-        self.row_base_pxls = (self.cur_ratio*self.im_size[0]) / row_num
-        vals = [self._row_pixels(),self._line_length(),self._line_gap()]
+    #     # self.cur_pts = np.sum(cur_mask > 0) #** This could potentially be made more efficient by using an exisiting mask iteration somewhere up the chain of processing
+    #     # self.cur_ratio = self.cur_pts/self.total_pts
+    #     # self.row_base_pxls = (self.cur_ratio*self.im_size[0]) / row_num
+    #     # vals = [self._row_pixels(),self._line_length(),self._line_gap()]
 
-        return vals
+    #     return vals
 
     # How to estimate the amount of pixels that should consitiute a line with the given values:
     #  - The line cannot be below a minimum number of pixels
@@ -128,8 +131,9 @@ class hough_assessment(object):
         # calculated.
         # pixel_min = int(self.adaptive_params.access("min_pixels_fact")*self.cur_pts)
 
-        pixel_min = int(math.log(self.cur_pts,1.5)) if self.cur_pts > 100 else 2
-        ic(pixel_min,self.cur_pts)
+        # pixel_min = int(math.log(self.cur_pts,1.5)) if self.cur_pts > 100 else 2
+        pixel_min = int(1.5*math.log((self.cur_pts*self.err_green/self.row_num),1.3)*(1-(self.sense/2))) if self.cur_pts > 300 else 3
+        # ic(pixel_min,self.cur_pts)
 
         # Variable values
         adj_factor = self.adaptive_params.access("pixels_per_row_percent")  
@@ -160,6 +164,7 @@ class hough_assessment(object):
         min_ln_len = min_ln_bound + (self.cur_ratio)*min_ln_bound
         return(int(min_ln_len))
 
+
     def slope_filter(self,mask,res=None):
         # Create a numpy array by shape
         if res is None:
@@ -184,7 +189,7 @@ class hough_assessment(object):
 
             self.slope_color(10)
 
-            if self.cmd == "none":
+            if "none" in self.args:
                 
                 # if abs(1/slope) < 1.7: #replace with cam calcs values
                 cv2.line(res, (x1,y1), (x2,y2), self.ln_col, 2)
@@ -202,29 +207,37 @@ class hough_assessment(object):
                 """** special Note: We use the x values at the lowest point of the image for that is the place where we want to process that rows with the most certainty"""
                 try:
                     intercept_bot = int((mask.shape[0]- (y1-(slope*x1)))/slope)
-                except ZeroDivisionError or OverflowError as e:
-                    print(e)
+                except ZeroDivisionError as e:
+                    if x1 > mask.shape[1]/2-err_margin and x1 < mask.shape[1]/2+err_margin:
+                        intercept_bot = mask.shape[1]/2
+                        slope = 1e10
+                    else: 
+                        continue
+                
+                except OverflowError as e:
                     if x1 > mask.shape[1]/2-err_margin and x1 < mask.shape[1]/2+err_margin:
                         intercept_bot = mask.shape[1]/2
                         slope = 1e10
                     else: 
                         continue
 
-                except ValueError or ZeroDivisionError or RuntimeWarning:
+                except ValueError or RuntimeWarning:
                     continue
-                if self.cmd == "avg":
+                if "avg" in self.args:
                     good_lines.append([slope,intercept_bot])
                     self.good_lns.append([slope,intercept_bot])
                 else:
                     cv2.line(res, (x1,y1), (x2,y2), self.ln_col, 2)
 
-        if self.cmd == "avg":
+        ret_im = res
+        if "avg" in self.args:
             if len(good_lines) == 0:
                 return
-
-            self.ret["mask {}".format(self.im_count)] = self.group_lns(np.array(good_lines), res) 
-        else:
-            self.ret["mask {}".format(self.im_count)] = res
+            ret_img = self.group_lns(np.array(good_lines), res)
+            # self.ret["mask {}".format(self.im_count)] = self.group_lns(np.array(good_lines), res) 
+        if "disp_steps" in self.args:
+            # self.ret["mask {}".format(self.im_count)] = rs
+            self.ret["mask {}".format(self.im_count)] = ret_im 
         self.im_count += 1
 
     def group_lns(self,lines,res=None,ln_tp = "avg", grp = True):
@@ -243,8 +256,8 @@ class hough_assessment(object):
                     pts = self.get_pts(lns[0][0],lns[0][1])
                 else:
                     av_ln = self.avg_lns(np.array(lns))
-                    if av_ln[1] > 300 and av_ln[1] < 350 and not grp:
-                        ic(lns)
+                    # if av_ln[1] > 300 and av_ln[1] < 350 and not grp:
+                    #     ic(lns)
 
                     try:
                         pts = self.get_pts(av_ln[0],av_ln[1])
@@ -268,7 +281,7 @@ class hough_assessment(object):
             return np.average(pts_gr,axis=0)
         else:
             sl_inv = 1/pts_gr[:,0]
-            ic(sl_inv)
+            # ic(sl_inv)
             return np.array([1/np.average(sl_inv), np.average(pts_gr[:,1])])
 
 
@@ -283,7 +296,10 @@ class hough_assessment(object):
     
 
     def get_pts(self,slope, intercept):
-        int_nrm =int(-1*(intercept*slope-self.ret["org"].shape[0])) 
+        try:
+            int_nrm =round(-1*(intercept*slope-self.ret["org"].shape[0])) 
+        except OverflowError :
+            int_nrm = 10e10
         x1 = -1*int(int_nrm/slope)
         y1 = 0
         x2 = int(intercept)
