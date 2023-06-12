@@ -79,7 +79,6 @@ The filters that the image passes through
 """
 def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, noise_tst = True,hough_cmd = "avg"):
 
-
     no_noise = img.copy()
     if noise_tst:
         img = noise(img) 
@@ -147,13 +146,16 @@ def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, no
 
     return imgs.ret
 
+# 
+
 
 def main():
 
 
     target = 'Resized_Imgs'
     weeds = 'Weedy_imgs'
-    drones = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_images/Winter Wheat"
+    # drones = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_images/Winter Wheat"
+    drones = 'Test_imgs\winter_wheat_stg1'
     vids = 'Drone_images/Winter_Wheat_vids'
     # ic.disable()
     dataCont = prep('sample',drones)    
