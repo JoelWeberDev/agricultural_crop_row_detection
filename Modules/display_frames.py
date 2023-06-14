@@ -22,7 +22,7 @@ from moviepy.video.io.bindings import mplfig_to_npimage
 #   
 
 # Display Video:
-def display_dec(data, func = None,dispOrg = False):
+def display_dec(data, func = None,dispOrg = False,**kwargs):
 
     #  We need to create this to take any of the methods in which data will be supplied to us and turn it into a dictionary with titles
     def handle_dtype(data): 
@@ -40,12 +40,13 @@ def display_dec(data, func = None,dispOrg = False):
         # Return a dicitionary that contais the image name and the corresponding image as the value
         if func:
             # display only the processed frame 
+            
             if dispOrg:
                 # display both the processed and original fram
-                ret = handle_dtype(func(sample))
+                ret = handle_dtype(func(sample,**kwargs))
                 ret["initial"] = sample
-                return (func(sample)["initial"]) 
-            return (handle_dtype(func(sample))) 
+                return (func(sample,**kwargs)["initial"]) 
+            return (handle_dtype(func(sample,**kwargs))) 
         return {"only":sample}
     # UI navigation: 
     # - 'q' to quit
@@ -54,8 +55,6 @@ def display_dec(data, func = None,dispOrg = False):
     # Sample data structure: 
     def vid(sample):
         # anaylze the sample to determine how the data is stored
-        sample 
-
         while True:
             ret, img = sample.read()
             if ret:
@@ -81,29 +80,31 @@ def display_dec(data, func = None,dispOrg = False):
                 return True
             elif cv2.waitKey(10) & 0xFF == ord('n'):
                 return False
-    
-    for key in data:
-        # Sample will always be a singular image or video
 
-        global b
-        b = False
-        for sample in data[key]:
-            if key == 'imgs':
-                imgs = apply_func(sample)
-                # print(len(imgs))
+    def start_display(data):
+        for key in data:
+            # Sample will always be a singular image or video
 
-                if len(imgs) > 1:
-                    dispMat(imgs)
+            global b
+            b = False
+            for sample in data[key]:
+                if key == 'imgs':
+                    imgs = apply_func(sample)
+                    # print(len(imgs))
 
-                    if b: break
-                    continue
-                if img(imgs): 
-                    return
-                cv2.destroyAllWindows()
+                    if len(imgs) > 1:
+                        dispMat(imgs)
 
-            elif key == 'vids':
-                if vid(sample): 
-                    return
+                        if b: break
+                        continue
+                    if img(imgs): 
+                        return
+                    cv2.destroyAllWindows()
+
+                elif key == 'vids':
+                    if vid(sample): 
+                        return
+    start_display(data)
 
 # Alternative display option: PyPlot 
 # - Data Feed:

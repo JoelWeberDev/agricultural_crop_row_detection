@@ -77,7 +77,16 @@ The filters that the image passes through
  3. Blur 
  4. 
 """
-def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, noise_tst = True,hough_cmd = "avg"):
+def inc_color_mask(img, **kwargs):
+
+    # make defaults for the kwargs:
+    upper = kwargs.get("upper",[75,255,255]) 
+    lower = kwargs.get("lower",[30,50,50]) 
+    resolution = kwargs.get("resolution",10)
+    noise_tst = kwargs.get("noise_tst",True)
+    hough_cmd = kwargs.get("hough_cmd","avg")
+    disp_cmd = kwargs.get("disp_cmd",None)
+
 
     no_noise = img.copy()
     if noise_tst:
@@ -98,8 +107,8 @@ def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, no
 
     # To group lines change the command from "none" to "avg"
     # add "disp_steps" to display the layers of masks to the output
-    # imgs = hough(img,org,no_noise,hough_cmd)
-    imgs = hough(img,org,no_noise,hough_cmd,"disp_steps")
+    imgs = hough(img,org,no_noise,hough_cmd)
+    # imgs = hough(img,org,no_noise,hough_cmd,"disp_steps")
     up = upper[0]
     low= lower[0]
 
@@ -142,7 +151,12 @@ def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, no
 
         res = final_rows.disp_pred_lines(pts)
         # ic(gr_lines)
-        imgs.ret["final"] = imgs.group_lns(gr_lines,res_img,grp = False)
+        final_frame = imgs.group_lns(gr_lines,res_img,grp = False)
+
+        imgs.ret["final"] = final_frame
+
+        if disp_cmd == "final":
+            return {"final":final_frame}
 
     return imgs.ret
 
@@ -152,15 +166,14 @@ def inc_color_mask(img, upper=[75,255,255], lower = [30,50,50],resolution=10, no
 def main():
 
 
-    target = 'Resized_Imgs'
-    weeds = 'Weedy_imgs'
     # drones = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_images/Winter Wheat"
     drones = 'Test_imgs\winter_wheat_stg1'
-    vids = 'Drone_images/Winter_Wheat_vids'
+    vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
     # ic.disable()
-    dataCont = prep('sample',drones)    
+    # dataCont = prep('sample',drones)    
+    dataCont = prep('sample',vids)
 
-    disp(dataCont, inc_color_mask)
+    disp(dataCont, inc_color_mask,  disp_cmd = "final")
     # disp(dataCont, edge_detection)
 
 

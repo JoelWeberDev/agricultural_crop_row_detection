@@ -2,14 +2,19 @@ import numpy as np
 import cv2
 import glob
 import math
+import os
 
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
-def calibrate(dirpath='C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Chess_imgs/*.jpg', prefix='calib', image_format='jpg', square_size=32, width=9, height=6):
+def calibrate(dirpath='Test_imgs/Chess_imgs/*jpg', prefix='calib', image_format='jpg', square_size=32, width=9, height=6):
     """ Apply camera calibration operation for images in the given directory path. """
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(8,6,0)
+    # reletive path to absolute path
+    dirpath = os.path.abspath(dirpath) 
+    # print(dirpath)
+
     objp = np.zeros((height*width, 3), np.float32)
     objp[:, :2] = np.mgrid[0:width, 0:height].T.reshape(-1, 2)
 
@@ -102,10 +107,13 @@ def manual_proj(rot,trans = np.array([0,0,0]),pts3d=np.array([[10,1000,1],[10,10
     return np.array([non_hom_coords(pt) for pt in pts3d])
 
 
-if __name__ == '__main__':
-    print(project_pts().reshape(-1,2))
-    # Test manual projection
+def test_chess_calib():
+    # Test chessboard calibration
+    mat, dist, shape = calibrate()
 
+    print(mat, dist, shape)
+
+def test_manual_proj():
     pitch = math.radians(60)
     yaw = math.radians(0)
     roll = math.radians(0)
@@ -115,5 +123,10 @@ if __name__ == '__main__':
     rot = eX @ ey @ eZ
     print(manual_proj(rot,pts3d=np.array([[ -631.63070166, 1000,178.92571254],[637.88718405, 1000,178.92571254],[  975.63810363, 1000, 1219.70803391], [ -984.55732316,1000,1217.47690563] ])))
 
+def test_proj_pts():
+    # Test projection
+    print(project_pts().reshape(-1,2))
 
-    # print(manual_proj(rot))
+if __name__ == '__main__':
+
+    test_chess_calib()

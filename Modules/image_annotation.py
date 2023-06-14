@@ -59,10 +59,6 @@ vpc = vpc()
 import line_calculations as lc
 
 
-class user_annotate(object):
-    def __init__(self,img):
-        self.img = img
-        self.img_shape = img.shape
 
 class image_interaction(object):
     def __init__(self,img):
@@ -273,10 +269,20 @@ class proc_annotations(object):
         self.make_mask()
         self.lr_mask()
         self.annot_info = {}
-        self.json_info = {}
+
+        self.json_info = {"annotations": self._make_list(annotations) ,"vp":self._make_list(self.vp)}
         self.find_rows()
         self.add_json()
 
+    def _make_list(self, iter):
+        iterable_types = (list,tuple,np.ndarray)
+
+        if  type(iter[0]) in iterable_types:
+            return [self._make_list(it) for it in iter]
+        else: 
+            ret = iter.tolist() if type(iter) == np.ndarray else list(iter)
+            return ret
+        
         
     def make_mask(self):
         self.mask = pre_process(self.img,des=["kernel","mask"])
@@ -501,19 +507,31 @@ def test(img):
     # return proc_annotations(img,img_interact.annotations).json_info
     return proc_annotations(img,test_annots).json_info
 
+def real_annotations(img):
+    img_interact = image_interaction(img)
+    img_interact.prep_plot()
+    return img_interact.annotations
 
 if __name__ == "__main__":
     from prep_input import interpetInput as prep 
     from display_frames import display_dec as disp
 
-    drones = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_images/Winter Wheat"
+    drones = 'Test_imgs/winter_wheat_stg1'
+    vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
 
-    data = prep('sample',drones)
 
-    # img_interact = image_interaction(data['imgs'][0])
-    # img_interact.prep_plot()
 
-    write_annotations(test(data['imgs'][0]))
+    # data = prep('sample',drones)
+    # write_annotations(test(data['imgs'][0]))
+
+    # read the first frame of the video
+    vids = prep('sample',vids) 
+    cap = vids['vids'][0]
+    ret, frame = cap.read()
+    write_annotations(proc_annotations(frame,real_annotations(frame)).json_info)
+    # write_annotations(test(frame))
+    cap.release() 
+
 
 
 
