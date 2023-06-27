@@ -16,7 +16,11 @@ from icecream import ic
 import sys,os
 import math
 
-from Group_lines import group_lns as grp
+try:
+    from Group_lines import group_lns as grp
+except:
+    sys.path.append(os.path.abspath(os.path.join('.')))
+    from Algorithims_tst.Group_lines import group_lns as grp
 
 
 sys.path.append(os.path.abspath(os.path.join('.')))
@@ -57,6 +61,7 @@ class hough_assessment(object):
         self.row_num = self.adaptive_params.access("row_num")
         self.err_green = self.adaptive_params.access("err_green")
         self.sense = self.adaptive_params.access("sensitivity")
+        self.vp = self.adaptive_params.access("vp")
 
     def appy_ln(self,mask,probibalistic=True):
         import time 
@@ -174,7 +179,7 @@ class hough_assessment(object):
         lines = self.appy_ln(mask)
         err_margin = 30 #* This is the error margin for the x_point offset from the vanishing point
         if lines is None:
-            self.ret["mask {}".format(self.im_count)] = res
+            # self.ret["mask {}".format(self.im_count)] = res
             self.im_count += 1
             return
 
@@ -232,7 +237,7 @@ class hough_assessment(object):
         ret_im = res
         if "avg" in self.args:
             if len(good_lines) == 0:
-                return
+                return 
             ret_img = self.group_lns(np.array(good_lines), res)
             # self.ret["mask {}".format(self.im_count)] = self.group_lns(np.array(good_lines), res) 
         if "disp_steps" in self.args:
@@ -240,7 +245,10 @@ class hough_assessment(object):
             self.ret["mask {}".format(self.im_count)] = ret_im 
         self.im_count += 1
 
-    def group_lns(self,lines,res=None,ln_tp = "avg", grp = True):
+    def group_lns(self,lines,res=None,**kwargs):
+        avg = kwargs.get("avg", True)
+        grp = kwargs.get("grp", True)
+        prev = kwargs.get("prev", False)
         # Gorups the lines and put them on the image with each group being a different color
         if grp:
             lines = self.grouper.groupLines(lines)
@@ -249,7 +257,7 @@ class hough_assessment(object):
         for i,lns in enumerate(lines):
             self.slope_color(i,len(lines),0)
             # Average the lines and then place the avearged ones on the image
-            if ln_tp == "avg":
+            if avg: 
                 if len(lns) == 0:
                     continue
                 elif len(lns) == 1:
@@ -264,6 +272,16 @@ class hough_assessment(object):
                     except IndexError:
                         continue
 
+                cv2.line(res, (pts[0],pts[1]), (pts[2], pts[3]), self.ln_col, 2)
+            
+            elif prev:
+                if not np.isnan(lns[0]):
+                    pts = self.get_pts(lns[0],lns[1])
+                else: 
+                    ic(self.vp)
+                    pts = [self.vp[0],self.vp[1], lns[1], self.im_size[0]]
+                    pts = [round(pt) for pt in pts]
+                    ic(pts)
                 cv2.line(res, (pts[0],pts[1]), (pts[2], pts[3]), self.ln_col, 2)
             
             # Place all the grouped lines on the image

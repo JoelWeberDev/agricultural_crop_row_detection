@@ -1,0 +1,145 @@
+{
+    "data": {
+        "camera_calculations": {},
+        "hough_line_params": {
+            "pixels_per_row_percent": 0.75,
+            "min_line_length_ratio": 0.25,
+            "max_line_gap_ratio": 0.5,
+            "min_line_gap_ratio": 0.01,
+            "min_pixels_fact": 0.01
+        },
+        "kernel_params": {
+            "horz_factor": 500,
+            "vert_factor": 100,
+            "kernel_factor": 200
+        },
+        "user_input": {
+            "sensitivity": 0.0,
+            "unit": "cm",
+            "row_count": 2,
+            "spacing": 18,
+            "plant_size": 5,
+            "row_width": 3
+        },
+        "ransac_params": {
+            "max_err": 0.001
+        },
+        "line_ranking_params": {
+            "inlier_coefficient": 0.2,
+            "neighbor_coefficient": 0.25
+        },
+        "line_groups": {
+            "intercept_perc": 0.05,
+            "slope_perc": 0.2
+        },
+        "vanishing_calcs": {
+            "x_deviation": 30
+        },
+        "img_size": {
+            "im_dims": [
+                640,
+                360
+            ]
+        },
+        "color_range": {
+            "lower": [
+                30,
+                50,
+                50
+            ],
+            "upper": [
+                75,
+                255,
+                255
+            ]
+        },
+        "calc_vals": {
+            "row_num": 2,
+            "spacing_pxls": [
+                304.81532784317324
+            ],
+            "spacing_mm": [
+                903.1018712763654
+            ],
+            "annotated_green": 2185.0,
+            "avg_bot_width_pxl": 40.60457067078099,
+            "avg_top_width_pxl": 24.108284750744644,
+            "avg_bot_width_mm": 120.30255832154984,
+            "avg_top_width_mm": 40.60457067078099,
+            "avg_spacing_mm": 903,
+            "avg_spacing_pxls": 304,
+            "all_annot_pts": 28849.0,
+            "all_green": 3595.0,
+            "annotations": [
+                [
+                    [
+                        258.85483870967744,
+                        349.3064516129032
+                    ],
+                    [
+                        289.82258064516134,
+                        4.7903225806451815
+                    ],
+                    [
+                        319.5,
+                        6.080645161290306
+                    ],
+                    [
+                        298.85483870967744,
+                        357.04838709677415
+                    ]
+                ],
+                [
+                    [
+                        560.7903225806451,
+                        348.01612903225805
+                    ],
+                    [
+                        500.14516129032256,
+                        2.2096774193548185
+                    ],
+                    [
+                        519.5,
+                        4.7903225806451815
+                    ],
+                    [
+                        600.7903225806451,
+                        349.3064516129032
+                    ]
+                ],
+                [
+                    [
+                        2.0806451612903203,
+                        211.24193548387098
+                    ],
+                    [
+                        94.98387096774195,
+                        2.2096774193548185
+                    ],
+                    [
+                        110.46774193548387,
+                        0.9193548387096939
+                    ],
+                    [
+                        7.241935483870975,
+                        269.3064516129032
+                    ]
+                ]
+            ],
+            "vp": [
+                324.26985946249965,
+                -776.4560708467907
+            ]
+        },
+        "Adaptive_values": {
+            "slope_error": 0.6061417230104094,
+            "inlier_coeff": 0.28031623880832307,
+            "max_line_gap": 144,
+            "min_line_len": 214,
+            "vanishing_point_error": 49.64400589295401,
+            "incremental_masks": 18,
+            "err_green": 0.8786167414513384,
+            "color_range": 8
+        }
+    }
+}

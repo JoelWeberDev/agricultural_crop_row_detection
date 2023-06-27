@@ -30,6 +30,7 @@ try:
     from Modules.Camera_Calib.Camera_Calibration import vanishing_point_calculator as vpc 
     from Adaptive_params.Adaptive_parameters import param_manager as ap
     from Modules.Camera_Calib.Chess_board_calib import manual_proj as threeD_to_twoD
+    from Modules import line_calculations  as lc
 except ModuleNotFoundError or ImportError:
     raise("Module not found at the correct path")
 
@@ -37,8 +38,10 @@ except ModuleNotFoundError or ImportError:
 
 class ag_lines(object):
     def __init__(self,img,lines, **kwargs):
+        # ic(lines, type(lines))
         self.img = img
         self.lines = self._censor_inp(lines) 
+        # ic(self.lines, type(self.lines))
         self.conversion_table = {"m":1000,"cm":10,"km":1000000,"in":25.4,"ft":304.8,"yd":914.4,"mi":1609344, "mm":1}
         self.vpc = vpc()
         self._load_params()
@@ -59,7 +62,9 @@ class ag_lines(object):
         except KeyError:
             raise("Invalid unit of measurement")
 
-        self.ln_err = self.ap.access("inlier_coefficient")
+        self.spacing_px = self.ap.access("avg_spacing_pxls")
+        # self.ln_err = self.ap.access("inlier_coefficient")
+        self.ln_err = self.ap.access("inlier_coeff")
         self.neig_err = self.ap.access("neighbor_coefficient")
 
 
@@ -75,12 +80,16 @@ class ag_lines(object):
        the results were calculated to be within 5% of the theoretical values
     Note that the intercepts that are returned are the ones that have been processed and potentilly changed 
     """
-    def _calc_row_disparity(self, pt):        
-        td_disparity = (td_pt := self.vpc.twoD_to_3D(pt)) + np.array([self.spacing,0,0])
-        # ic(td_disparity, three_d_pt)
-        twoD_disp = threeD_to_twoD(np.array(self.vpc.extrinsic)[:3,:3], pts3d=td_disparity).ravel()
-        delt_horz = int(abs(twoD_disp[0] - pt[0]))
-        return delt_horz
+    def _calc_row_disparity(self, pt, ui=False):        
+        if ui:
+            td_disparity = (td_pt := self.vpc.twoD_to_3D(pt)) + np.array([self.spacing,0,0])
+            ic(td_disparity, td_pt)
+            twoD_disp = threeD_to_twoD(np.array(self.vpc.extrinsic)[:3,:3], pts3d=td_disparity).ravel()
+            delt_horz = int(abs(twoD_disp[0] - pt[0]))
+            ic(delt_horz)
+            return delt_horz
+        else:
+            return self.spacing_px
 
     def spacing_intervals(self, st_pt):
         st_pt,incpt_lns,srt_lns, disp,minmax= self._proc_lines(st_pt)
@@ -103,10 +112,9 @@ class ag_lines(object):
         return st_pt,incpt_lns,srt_lns, disp,(x_min,x_max)
 
 
-    def calc_pts(self,st_pt=(0,720)):
+    def calc_pts(self,st_pt=(0,720),ret_ranked_grps=False):
         # st_pt = self._censor_inp(st_pt).ravel()
         # incpt_lns = np.array([[ln[0],self._calc_intercept(ln,st_pt[1])] for ln in self.lines])
-        # srt_lns = incpt_lns[incpt_lns[:,1].argsort()]
         # disp = self._calc_row_disparity(st_pt)
 
         st_pt,incpt_lns,srt_lns, disp,minmax = self._proc_lines(st_pt)
@@ -116,73 +124,82 @@ class ag_lines(object):
         Take the inliers and put them into a group. Then remove those inliers from the list of lines so that they do not get processed. 
 
         """
-        def _tally_score(start, end, disp,srt_lns,inc=True):
+        def _tally_score(start, end, disp,lines,inc=True):
             sum = 0
             group = []
+            iters = np.array([0])
+            start = lines[0,1]
             while True:
                 if inc and start > end:
                     break
                 elif not inc and start < end:
                     break
-                inliers = self._bin_search(srt_lns[:,1],start,abs(disp*self.ln_err))
+                inliers = self._bin_search(lines[:,1],start,abs(disp*self.ln_err))
 
-                neighbours = self._bin_search(srt_lns[:,1],start,abs(disp*self.neig_err))
-                sum += neighbours[1]-neighbours[0]
+                # neighbours = self._bin_search(srt_lns[:,1],start,abs(disp*self.neig_err))
 
+                sum += inliers[1]-inliers[0]
 
-                # if not None in inliers : 
-                    # inlier_iters = np.arange(neighbours[0],neighbours[1])
-                #     # iterators.append(inlier_iters)
-                #     group.append(srt_lns[inlier_iters].tolist())
-                #     # ic(inlier_iters)
-                #     srt_lns = np.delete(srt_lns,inliers,axis=0)
-
-                inlier_iters = np.arange(inliers[0],inliers[1])
-                group.append(srt_lns[inlier_iters].tolist())
-
+                inlier_iters = np.arange(inliers[0],inliers[1], dtype=int)
+                inlier_vals = lines[inlier_iters]
+                if inlier_iters.size > 0:
+                    iters = np.unique(np.concatenate((iters,inlier_iters)))
+                    group.append(inlier_vals.tolist())
+                    # group += lines[inlier_iters].tolist()
+                    av_ln = np.average(inlier_vals,axis=0)
+                    start = av_ln[1]
                 start += disp
                 
-            # return sum,group,srt_lns
-            return sum,group 
+            # return sum,group,lines
+            return sum,group,iters
 
         scored_grps = []
+        scores = []
         max_score = (0,0)
         i = 0
-        x_min,x_max = srt_lns[0,1], srt_lns[-1,1]
-        for i,ln in enumerate(srt_lns):
-        # while len(srt_lns) > 0:
+        # for i,ln in enumerate(srt_lns):
+        while len(srt_lns) > 0:
+            ln = srt_lns[0]
             start = ln[1]
+            x_min,x_max = srt_lns[0,1], srt_lns[-1,1]
             decrem, increm = _tally_score(start,x_max,disp, srt_lns,inc=True),  _tally_score(start,x_min,disp*-1,srt_lns,inc=False)
 
             scored_grp = increm[1] + decrem[1]
             tot_score = increm[0] + decrem[0]
             if tot_score > max_score[0]:
                 max_score = (tot_score,i)
-            scored_grps.append(scored_grp)
+            if len(scored_grp) > 0:
+                scored_grps.append(scored_grp)
+                scores.append(tot_score)
+            rem_vals = np.unique(np.concatenate((increm[2],decrem[2])),axis=0).astype(int)
+            new = np.delete(srt_lns,rem_vals,axis=0)
+            srt_lns = new[new[:,1].argsort()]
 
             i += 1
 
 
         res = list(itertools.chain(*scored_grps[max_score[1]]))
-        # ic(res)
+        if ret_ranked_grps:
+            return scored_grps, scores,scored_grps[max_score[1]]
+
+
         return res,scored_grps[max_score[1]]
-        # return scored_grps
+
 
 
     """The input array must be a sorted one by the axis which you desire to search
     """        
 
     def _bin_search(self, arr, val,err): 
-        ub,lb = int(val+err),int(val-err)
-
+        
+        ub,lb = round(val+err),round(val-err)
         if lb > arr[-1] or ub < arr[0]:
-            # ic(lb,ub,arr)
             return None,None
         high,low = len(arr)-1,0
+
         def low_search(low,high):
             if high-low < 2:
                 # if arr[high] > ub:
-                #     ic(ub, arr[high])
                 #     return None
                 return high 
             mid = int((high+low)/2)
@@ -193,7 +210,6 @@ class ag_lines(object):
         def high_search(low,high):
             if high-low < 2:
                 # if arr[low] < lb:
-                #     ic(ub, arr)
                 #     return None
                 return low
             mid = int((high+low)/2)
@@ -215,12 +231,12 @@ class ag_lines(object):
         for pt in pts:
             cv2.circle(self.img, tuple(pt), pt_sz, color, -1)
 
-    def _slope_to_pts(self, ln, y_int=0):
-        interc = self._calc_intercept(ln,y_int)
-        pt1 = (int(y_int),int(ln[1]))
-        reg_int = int((y_int-ln[1])/ln[0])
-        pt2 = (reg_int, 0)
-        return (pt1,pt2)
+    # def _slope_to_pts(self, ln, y_int=0):
+    #     interc = self._calc_intercept(ln,y_int)
+    #     pt1 = (int(y_int),int(ln[1]))
+    #     reg_int = int((y_int-ln[1])/ln[0])
+    #     pt2 = (reg_int, 0)
+    #     return (pt1,pt2)
 
     def _get_pts(self,slope, intercept):
         int_nrm =int(-1*(intercept*slope-self.img.shape[0])) 
@@ -238,56 +254,79 @@ class ag_lines(object):
         return iter
     
     def disp_pred_lines(self, lines):
-        lines = self._censor_inp(lines)
-
-        for ln in lines:
-            # pts = self._slope_to_pts(ln,self.img.shape[0])
-            pts = self._get_pts(ln[0],ln[1])
-            cv2.line(self.img, pts[0],pts[1] , (255,255,255), 2)
-            # yield pts
+        # lines = self._censor_inp(lines)
+        ic("display")
+        for gr in lines:
+            for ln in gr:
+                pts = self._get_pts(ln[0],ln[1])
+                cv2.line(self.img, pts[0],pts[1] , (255,255,255), 2)
         return lines 
 
-        
+def test(lines = None, origin = (0,720)):        
+    img = np.zeros((720,1280))
+    if not lines:
+        lines = [[ -3.09756098,  -8.        ],
+                    [ -2.7826087 , -66.        ],
+                    [ -3.07228916,  -8.        ],
+                    [ -3.08536585,  -6.        ],
+                    [ -6.4       , 329.        ],
+                    [ -3.08045977, -10.        ],
+                    [ -3.06896552, -12.        ],
+                    [ -3.05747126, -14.        ],
+                    [ -3.09756098,  -9.        ],
+                    [ -3.09302326, -12.        ],
+                    [ -6.38      , 330.        ],
+                    [ -2.84444444, -66.        ],
+                    [ -3.08139535, -14.        ],
+                    [ -3.06097561,  -4.        ],
+                    [ -3.08510638, -15.        ],
+                    [ -3.0875    ,  -3.        ],
+                    [ -2.85      , -67.        ],
+                    [ -6.35      , 331.        ],
+                    [ -2.83783784, -62.        ],
+                    [ -3.07594937,  -2.        ]]
+    # lines = lines_from_db()[0]
+    ag = ag_lines(img, lines)
 
+    groups = ag.calc_pts(origin, True)
+    srt_scores = np.array(groups[1]).argsort()
+    ic(groups[2])
+    ranked_group = [groups[0][i] for i in srt_scores[::-1]]
+    # ic(ranked_group)
+    
+    # pts, gr_lines = ag.calc_pts(origin, ret_gr_lines=False)
+    # ic(groups[0:4])
+    # ag.disp_pred_lines(gr_lines)
+    # return (*ag.calc_pts(origin), ag)
+    return ranked_group, ag
+
+
+def lines_from_db():
+    from data_base_manager import data_base_manager as dbm 
+    winter_wheat = dbm(data_name='winter_wheat.csv')
+    data = winter_wheat.read_data_base()
+
+    # groups = [alg_test(lns, origin=(0,360))[1] for lns in winter_wheat.read_data_base()]
+    return data
 
 
 if __name__ == "__main__":
-    img = np.zeros((720,1280))
-    bad_lines = np.array([[
-        [ -3.09756098,  -8.        ],
-        [1, 2334],
-        [[ -2.7826087 , -66.        ]]
-    ]])
+    # bad_lines = np.array([[
+    #     [ -3.09756098,  -8.        ],
+    #     [1, 2334],
+    #     [[ -2.7826087 , -66.        ]]
+    # ]])
 
 
-    lines = np.array([[ -3.09756098,  -8.        ],
-                  [ -2.7826087 , -66.        ],
-                  [ -3.07228916,  -8.        ],
-                  [ -3.08536585,  -6.        ],
-                  [ -6.4       , 329.        ],
-                  [ -3.08045977, -10.        ],
-                  [ -3.06896552, -12.        ],
-                  [ -3.05747126, -14.        ],
-                  [ -3.09756098,  -9.        ],
-                  [ -3.09302326, -12.        ],
-                  [ -6.38      , 330.        ],
-                  [ -2.84444444, -66.        ],
-                  [ -3.08139535, -14.        ],
-                  [ -3.06097561,  -4.        ],
-                  [ -3.08510638, -15.        ],
-                  [ -3.0875    ,  -3.        ],
-                  [ -2.85      , -67.        ],
-                  [ -6.35      , 331.        ],
-                  [ -2.83783784, -62.        ],
-                  [ -3.07594937,  -2.        ]])
-    ag = ag_lines(img,bad_lines)
-    pts = ag.calc_pts((0,720))
-    ic(pts)
     # pts = ag.spacing_intervals((100,720))
     # ag.disp_pred_pts(pts, color=(255,255,255))
-    ag.disp_pred_lines(pts)
 
-    cv2.imshow("pts",ag.img)
-    # cv2.imshow("blanc", img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # pts, gr_lines, ag = test()
+    test()
+    
+    # ag.disp_pred_lines(gr_lines)
+
+    # cv2.imshow("pts",ag.img)
+    # # cv2.imshow("blanc", img)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()

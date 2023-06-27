@@ -33,11 +33,10 @@ Future extensions:
 '''
 
 import numpy as np
-import cv2
 import warnings
 import math
 from icecream import ic
-
+import sys,os
 # Mat dependecies
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
@@ -45,9 +44,13 @@ from matplotlib.path import Path
 from matplotlib.patches import PathPatch
 from matplotlib.widgets import Button
 
-from Image_Processor import apply_funcs as pre_process 
+try:
+    from Image_Processor import apply_funcs as pre_process 
+except ModuleNotFoundError:
+    sys.path.append(os.path.abspath(os.path.join('.')))
+    from Modules.Image_Processor import apply_funcs as pre_process 
 
-from Camera_Calib.Chess_board_calib import manual_proj as threeD_to_twoD
+from Modules.Camera_Calib.Chess_board_calib import manual_proj as threeD_to_twoD
 from Modules.Camera_Calib.Camera_Calibration import vanishing_point_calculator as vpc 
 # import json
 from Modules.json_interaction import load_json
@@ -56,9 +59,10 @@ loaded_cam = load_json("C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recogn
 
 vpc = vpc()
 
-import line_calculations as lc
+import Modules.line_calculations as lc
 
 
+#  pylint: disable=E1101
 
 class image_interaction(object):
     def __init__(self,img):
@@ -72,7 +76,6 @@ class image_interaction(object):
         self.cur_pt = 0
 
         self.annotater = disp_shape()
-        self.annotations = self.annotater.annotations
 
         self.buttons = {}
 
@@ -100,9 +103,9 @@ class image_interaction(object):
             if event.inaxes is self.ax:
                 print("Left click")
                 if self.mouse_pos[0] > self.img.shape[1]-1:
-                    self.mouse_pos[0] = self.img.shape[1]-1
+                    self.mouse_pos[0] = self.img.shape[1]-1 # type: ignore
                 elif self.mouse_pos[1] > self.img.shape[0]-1:
-                    self.mouse_pos[1] = self.img.shape[0]-1
+                    self.mouse_pos[1] = self.img.shape[0]-1 # type: ignore
                 self.points[self.cur_pt] = self.mouse_pos 
                 self.cur_pt += 1
                 self.annotater.shape_manager(event,self.points,self.cur_pt)
@@ -116,6 +119,7 @@ class image_interaction(object):
         if self.cur_pt > 0:
             warnings.warn("The user has not finished annotating the image. The current points will be discarded")     
         self.reset_pts()    
+        self.annotations = self.annotater.annotations
 
     def on_undo(self,event):
         print("Undo clicked.")
@@ -126,7 +130,7 @@ class image_interaction(object):
                 self.annotater.remove_patch()
         elif len(self.annotater.temp) > 0: 
             ic(self.annotater.annotations)
-            self.points = np.concatenate(self.annotater.annotations[-1][:3],np.ones((2,2)))
+            self.points = np.concatenate(self.annotater.annotations[-1][:3],np.ones((2,2))) # type: ignore
             ic(self.points)
             self.annotater.temp = self.points[:3] 
             self.annotater.remove_patch(self.annotater.annotations[-1][-1])
@@ -146,10 +150,10 @@ class image_interaction(object):
         self.annotater.reset()
         
     def _user_buttons(self):
-        self.button_axs = {"confirm":[plt.axes([0.81, 0.05, 0.1, 0.075]),self.on_confirm],
-            "undo":[plt.axes([0.7, 0.05, 0.1, 0.075]),self.on_undo],
-            "redo":[plt.axes([0.59, 0.05, 0.1, 0.075]), self.on_redo],
-            "reset":[plt.axes([0.48, 0.05, 0.1, 0.075]),self.on_reset]}
+        self.button_axs = {"confirm":[plt.axes([0.81, 0.05, 0.1, 0.075]),self.on_confirm], # type: ignore
+            "undo":[plt.axes([0.7, 0.05, 0.1, 0.075]),self.on_undo], # type: ignore # type: ignore
+            "redo":[plt.axes([0.59, 0.05, 0.1, 0.075]), self.on_redo], # type: ignore
+            "reset":[plt.axes([0.48, 0.05, 0.1, 0.075]),self.on_reset]} # type: ignore
 
         for key,ax in self.button_axs.items():
             self._make_button(key,ax)
@@ -161,10 +165,11 @@ class image_interaction(object):
 
 class disp_shape(object):
     def __init__(self):
-        self.temp = []
-        self.annotations = []
-        self.conf_patches = []
-        self.hover = None
+        self.reset()
+        # self.temp = []
+        # self.annotations = []
+        # self.conf_patches = []
+        # self.hover = None
 
     def get_patch(self,verticies,code):
         path = Path(verticies,code)
@@ -201,10 +206,8 @@ class disp_shape(object):
     def reset(self):
         self.temp = []
         self.annotations = []
+        self.conf_patches = []
         self.hover = None
-
-
-    
 
             
     # The shape should always be numpy array of points that will be connected by direct lines
@@ -247,6 +250,8 @@ def write_annotations(annotations):
     for key,annot in annotations.items():
         ic(key,annot)
         pm.update(key, annot,"calc_vals")
+
+    return pm.path
 
 
 def type_handle_test(class_obj):
@@ -361,7 +366,7 @@ class proc_annotations(object):
         clock_srt = lc.clockwise_sort(annot,self.img.shape)
         srt_pts = clock_srt.ordered_pts
 
-        for i,pt in enumerate(srt_pts):
+        for i,pt in enumerate(srt_pts): # type: ignore
             slp = lc.calc_slope(pt,srt_pts[i-1])
             ln_slps.append(slp)
             ic(slp)
@@ -441,6 +446,7 @@ class proc_annotations(object):
             min_max = np.ones(2)
             for i,ln in enumerate(self.v_lines):
                 x = int((y_val-ln[1])/ln[0])
+    
                 if x >= self.img.shape[1]-1:
                     x = self.img.shape[1]-1
                 elif x < 0:
@@ -507,30 +513,40 @@ def test(img):
     # return proc_annotations(img,img_interact.annotations).json_info
     return proc_annotations(img,test_annots).json_info
 
-def real_annotations(img):
+def video_main():
+    vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
+    vids = prep('sample',vids) 
+    cap = vids['vids'][0]
+    ret, frame = cap.read()
+    main(frame)
+    cap.release() 
+
+def main(img):
     img_interact = image_interaction(img)
     img_interact.prep_plot()
-    return img_interact.annotations
+    json_path = write_annotations(proc_annotations(img,img_interact.annotations).json_info)
+    return json_path
+
+def test_without_writing(img):
+    img_interact = image_interaction(img)
+    img_interact.prep_plot()
+    return proc_annotations(img,img_interact.annotations).json_info
 
 if __name__ == "__main__":
     from prep_input import interpetInput as prep 
     from display_frames import display_dec as disp
 
     drones = 'Test_imgs/winter_wheat_stg1'
-    vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
 
 
-
-    # data = prep('sample',drones)
-    # write_annotations(test(data['imgs'][0]))
+    data = prep('sample',drones)
+    # test_without_writing(data['imgs'][0])
+    # main(data['imgs'][0])
+    write_annotations(test(data['imgs'][0]))
 
     # read the first frame of the video
-    vids = prep('sample',vids) 
-    cap = vids['vids'][0]
-    ret, frame = cap.read()
-    write_annotations(proc_annotations(frame,real_annotations(frame)).json_info)
+    # write_annotations(proc_annotations(frame,real_annotations(frame)).json_info)
     # write_annotations(test(frame))
-    cap.release() 
 
 
 

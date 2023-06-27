@@ -75,7 +75,7 @@ def loadSampleImages(**kwargs):
     # Create a dictionary to store the images and videos
 
     def isImage(file):
-        if os.path.splitext(file)[1] in {'.jpg','.jpeg','.jpe','.jp2','.tif', '.tiff','.sr','.ras','.pbm','.pgm','.ppm','.bpm','.png' }:
+        if os.path.splitext(file)[1] in {'.jpg','.JPG','.jpeg','.jpe','.jp2','.tif', '.tiff','.sr','.ras','.pbm','.pgm','.ppm','.bpm','.png' }:
             return True
         return False
 

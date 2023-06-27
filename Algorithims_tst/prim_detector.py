@@ -17,8 +17,11 @@ from icecream import ic
 import time
 
 
-from inceremental_masks import hough_assessment as hough 
-import contour_detect as cont
+try:
+    from inceremental_masks import hough_assessment as hough    
+except:
+    from Algorithims_tst.inceremental_masks import hough_assessment as hough 
+# import contour_detect as cont
 
 sys.path.append(os.path.abspath(os.path.join('.')))
 
@@ -26,12 +29,15 @@ from Modules.prep_input import interpetInput as prep
 from Modules.display_frames import display_dec as disp
 from Modules.Image_Processor import apply_funcs as pre_process 
 
-from aggregate_lines import ag_lines as agl
+from Algorithims_tst.aggregate_lines import ag_lines as agl
 
 from Adaptive_params import Adaptive_parameters as ap
-from MAKE_SOME_NOISE import noise 
+from Algorithims_tst.MAKE_SOME_NOISE import noise 
+from consider_prev_lines import process_prev_lines as prev_lns
 
 params = ap.param_manager()
+prev = prev_lns(avg=True)
+
 def load_modules(module_list):
     reqs = {"cv2", "np", "time", "ic", }
 
@@ -70,6 +76,15 @@ def edge_detection(src_im, des = ["sobelx","sobely","sobelxy","laplacian"]):
     # return {'sobelX':sobel_im[0],'laplacian':laplacian()}
     return{'canny':pre_process(src_im,des=['kernel','mask']),'org':pre_process(src_im,des=['kernel'])}
 
+
+
+def save_lns():
+    # from Modules.data_base_manager import data_base_manager as dbm
+    from data_base_manager import data_base_manager as dbm
+    return dbm(path = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/python_soybean_c/saved_tests/saved_lines", data_name = 'winter_wheat.csv')
+
+
+
 """
 The filters that the image passes through 
  1. Resize to (640,360)
@@ -85,7 +100,15 @@ def inc_color_mask(img, **kwargs):
     resolution = kwargs.get("resolution",10)
     noise_tst = kwargs.get("noise_tst",True)
     hough_cmd = kwargs.get("hough_cmd","avg")
+    # Disp_cmd values that get a result: "final" (displays on the final frame) "disp_steps" (displays the steps of the process) "none" (displays nothing)
     disp_cmd = kwargs.get("disp_cmd",None)
+    # The database object should be passed in as a parameter
+    save_lns = kwargs.get("save_lns",None)
+    # Detection is a video
+    video = kwargs.get("video",False)
+    # prev_lines = kwargs.get("prev_lines",None)
+
+
 
 
     no_noise = img.copy()
@@ -107,7 +130,7 @@ def inc_color_mask(img, **kwargs):
 
     # To group lines change the command from "none" to "avg"
     # add "disp_steps" to display the layers of masks to the output
-    imgs = hough(img,org,no_noise,hough_cmd)
+    imgs = hough(img,org,no_noise,hough_cmd, disp_cmd)
     # imgs = hough(img,org,no_noise,hough_cmd,"disp_steps")
     up = upper[0]
     low= lower[0]
@@ -121,8 +144,10 @@ def inc_color_mask(img, **kwargs):
     total_mask = get_masks(org,upper,lower)
     imgs.slope_filter(total_mask[0],total_mask[1])
 
+    num_splits = params.access("incremental_masks")
+    color_range = params.access("color_range") 
     # for i in range(1,resolution+1):
-    for v in imgs.color_splits(30,12):
+    for v in imgs.color_splits(num_splits,color_range):
 
         up = np.array([v[1],upper[1],upper[2]])
         low = np.array([v[0],lower[1],lower[2]])
@@ -130,33 +155,47 @@ def inc_color_mask(img, **kwargs):
 
         # Run the blob detections on the image
         # Initalize the contour class:
-        def conts():
-            grouper = cont.cont_detec(bin_mask)
-            grouper.createContours(mode="ext")
-            grouper.filterCont(thresh=100)
-            return grouper.cont_im
         # Group the lines that are deemed good by slope and  intercept
 
         imgs.slope_filter(bin_mask,cur_msk)
-        # ret["mask{} {}".format(v[0],v[1])] = cur_msk
+        ret["mask{} {}".format(v[0],v[1])] = cur_msk
+
 
     # Create a mask for the image
+    if save_lns != None:
+        ic(np.array(imgs.good_lns).shape)
+        save_lns.update_csv(imgs.good_lns)
     
-    if hough_cmd == "avg":
-        total_lns = imgs.good_lns
+    if hough_cmd == "avg" and len(imgs.good_lns) > 1:
+        # total_lns = imgs.good_lns
+
         res_img = org.copy()
 
-        final_rows = agl(img, total_lns)
-        pts, gr_lines = final_rows.calc_pts([0,img.shape[0]])
+        final_rows = agl(img, imgs.good_lns)
 
-        res = final_rows.disp_pred_lines(pts)
-        # ic(gr_lines)
-        final_frame = imgs.group_lns(gr_lines,res_img,grp = False)
+        if video and type(prev.prev_lines) != type(None):
+            # ic(prev.prev_lines)
+            groups, score , best_lines = final_rows.calc_pts([0,img.shape[0]],True)
+            # Later development: Could select the top lines by the percentage of the total lines that are contained for a more adaptvie representation of the line set.
+            top_inds = np.argsort(np.array(score))[::-1][:round(len(score)/3)]
+            best_grps = [groups[i] for i in top_inds]
 
+            gr_lines = prev.best_match(best_grps)[3]
+            prev.prev_lines = gr_lines
+            final_frame = imgs.group_lns(gr_lines,res_img,grp = False, avg=False, prev=True)
+        else:
+            pts, gr_lines = final_rows.calc_pts([0,img.shape[0]],False)
+            prev.prev_lines = gr_lines
+            final_frame = imgs.group_lns(gr_lines,res_img,grp = False)
+        
         imgs.ret["final"] = final_frame
 
         if disp_cmd == "final":
             return {"final":final_frame}
+        # final_rows.disp_pred_lines(gr_lines)
+
+        # ic(gr_lines)
+
 
     return imgs.ret
 
@@ -165,15 +204,17 @@ def inc_color_mask(img, **kwargs):
 
 def main():
 
-
+    data_base = save_lns()
     # drones = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_images/Winter Wheat"
-    drones = 'Test_imgs\winter_wheat_stg1'
+    drones = 'Test_imgs/winter_wheat_stg1'
     vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
     # ic.disable()
-    # dataCont = prep('sample',drones)    
-    dataCont = prep('sample',vids)
+    dataCont = prep('sample',drones)    
+    # dataCont = prep('sample',vids)
 
-    disp(dataCont, inc_color_mask,  disp_cmd = "final")
+    disp(dataCont, inc_color_mask , video = True)
+    # disp(dataCont, inc_color_mask,  disp_cmd = "final")
+    # disp(dataCont, inc_color_mask, hough_cmd = "avg", disp_cmd = "disp_steps", save_lns = data_base)
     # disp(dataCont, edge_detection)
 
 

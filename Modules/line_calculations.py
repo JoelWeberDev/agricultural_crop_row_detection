@@ -17,27 +17,40 @@ def calc_slope(pt1,pt2):
         if pt2[1]- pt1[1] == 0:
             print(pt1,pt2)
 
-        return (pt2[1]- pt1[1])/(pt2[0]-pt1[0])
+        return _cnvt_numpy_special_tpyes((pt2[1]- pt1[1])/(pt2[0]-pt1[0]))
     except ZeroDivisionError:
         return 10e10
 
 def calc_intercept(slope,pt):
-    return pt[1] - (slope*pt[0])
+    return _cnvt_numpy_special_tpyes(pt[1] - (slope*pt[0]))
 
 def calc_x_val(line,y):
     slope,intercept = line[0],line[1]
     try:
-        return (y-intercept)/slope
+        return _cnvt_numpy_special_tpyes((y-intercept)/slope)
     except ZeroDivisionError:
         return 10e10
 
 def calc_pts(slope,intercept):
-    return np.array([[0,intercept],[calc_x_val(slope,intercept,0),0]])
+    return np.array([[0,intercept],[calc_x_val([slope,intercept],0),0]])
 
 def calc_line(pt1,pt2):
     slope = calc_slope(pt1,pt2)
     intercept = calc_intercept(slope,pt1)
     return np.array([slope,intercept])
+
+# Checks if a line is a certain type otherwise it will convert to the target type. Finally if a conversion fails then an error is proigated 
+def _cnvt_numpy_special_tpyes(val):
+    
+    if math.isnan(val):
+        return 0.0
+    elif math.isinf(val):
+        return 10e10
+    return val
+
+def avg_lines(lines):
+    cnvt_lines = cnvt_iterables(lines)
+    return np.average(cnvt_lines,axis=0)
 
 def get_vec(pt1,pt2):
     # Get the angle from the first point to the second

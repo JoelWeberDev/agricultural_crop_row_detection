@@ -1,0 +1,127 @@
+{
+    "data": {
+        "camera_calculations": {},
+        "hough_line_params": {
+            "pixels_per_row_percent": 0.75,
+            "min_line_length_ratio": 0.25,
+            "max_line_gap_ratio": 0.5,
+            "min_line_gap_ratio": 0.01,
+            "min_pixels_fact": 0.01
+        },
+        "kernel_params": {
+            "horz_factor": 500,
+            "vert_factor": 100,
+            "kernel_factor": 200
+        },
+        "user_input": {
+            "sensitivity": 0.0,
+            "unit": "cm",
+            "row_count": 2,
+            "spacing": 18,
+            "plant_size": 5,
+            "row_width": 3
+        },
+        "ransac_params": {
+            "max_err": 0.001
+        },
+        "line_ranking_params": {
+            "inlier_coefficient": 0.2,
+            "neighbor_coefficient": 0.25
+        },
+        "line_groups": {
+            "intercept_perc": 0.05,
+            "slope_perc": 0.2
+        },
+        "vanishing_calcs": {
+            "x_deviation": 30
+        },
+        "img_size": {
+            "im_dims": [
+                640,
+                360
+            ]
+        },
+        "color_range": {
+            "lower": [
+                30,
+                50,
+                50
+            ],
+            "upper": [
+                75,
+                255,
+                255
+            ]
+        },
+        "calc_vals": {
+            "row_num": 2,
+            "spacing_pxls": [
+                349.1338622422453
+            ],
+            "spacing_mm": [
+                1034.4081006291763
+            ],
+            "annotated_green": 1623.0,
+            "avg_bot_width_pxl": 37.42546953912303,
+            "avg_top_width_pxl": 19.423803838474896,
+            "avg_bot_width_mm": 110.88356944952625,
+            "avg_top_width_mm": 37.42546953912303,
+            "avg_spacing_mm": 1034,
+            "avg_spacing_pxls": 349,
+            "all_annot_pts": 20448.0,
+            "all_green": 8133.0,
+            "annotations": [
+                [
+                    [
+                        60.14516129032259,
+                        342.85483870967744
+                    ],
+                    [
+                        147.88709677419354,
+                        0.9193548387096939
+                    ],
+                    [
+                        165.95161290322582,
+                        3.5
+                    ],
+                    [
+                        85.9516129032258,
+                        358.33870967741933
+                    ]
+                ],
+                [
+                    [
+                        396.91935483870964,
+                        354.4677419354839
+                    ],
+                    [
+                        373.6935483870967,
+                        3.5
+                    ],
+                    [
+                        394.3387096774194,
+                        4.7903225806451815
+                    ],
+                    [
+                        442.08064516129025,
+                        358.33870967741933
+                    ]
+                ]
+            ],
+            "vp": [
+                324.26985946249965,
+                -776.4560708467907
+            ]
+        },
+        "Adaptive_values": {
+            "slope_error": 0.6061417230104094,
+            "inlier_coeff": 0.28031623880832307,
+            "max_line_gap": 144,
+            "min_line_len": 214,
+            "vanishing_point_error": 49.64400589295401,
+            "incremental_masks": 18,
+            "err_green": 0.8786167414513384,
+            "color_range": 8
+        }
+    }
+}

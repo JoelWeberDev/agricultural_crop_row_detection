@@ -3,6 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import random
 
 from moviepy.editor import VideoClip 
 from moviepy.video.io.bindings import mplfig_to_npimage
@@ -82,16 +83,23 @@ def display_dec(data, func = None,dispOrg = False,**kwargs):
                 return False
 
     def start_display(data):
+        ret = []
         for key in data:
             # Sample will always be a singular image or video
 
             global b
             b = False
-            for sample in data[key]:
+            # for sample in data[key]:
+            for i in np.arange(len(data[key])):
+                sample = data[key][index := random.randint(0,len(data[key])-1)]
+                # sample = data[key][rand_index]
+                data[key].pop(index)
+
+
                 if key == 'imgs':
                     imgs = apply_func(sample)
                     # print(len(imgs))
-
+                    ret.append(imgs)
                     if len(imgs) > 1:
                         dispMat(imgs)
 
@@ -104,7 +112,9 @@ def display_dec(data, func = None,dispOrg = False,**kwargs):
                 elif key == 'vids':
                     if vid(sample): 
                         return
-    start_display(data)
+        return ret
+
+    return start_display(data)
 
 # Alternative display option: PyPlot 
 # - Data Feed:

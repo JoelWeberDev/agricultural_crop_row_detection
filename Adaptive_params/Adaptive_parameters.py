@@ -199,25 +199,36 @@ Functions for variables:
 
     cr = int(25log15(tgr)*1-(s/2)) 6 < cr < 10
 
+ Weight of missing line:
+    Description: I a video or a linearly coherent set of images we can improve the accuracy and consistency of the model by processing the previous frame to determine which groups of lines best match the new ones
+    However if a line is missed in the frame that should decrease the probability of it being the correct set of lines thus we need to assign a wieght to the missing line.
+    Use cases: consider_prev_lines
+
+    independant variables:
+     - rn detected row number
+     - spacing between rows
+     - max number of rows
+
+
 
 
 """
 
 
 
-def imp_mods(modules):
-    import warnings
-    pip_reqs = {"ic"}
-    local_reqs = {"json"}
-    # This is where all the classes or functions of a module will be located. It will point to its parent and will simply need to be named as a global variable 
-    sub_mods = {}
-    # reqs = pip_reqs.union(local_reqs)
-    try:
-        for req in pip_reqs:            
-            globals()[req] = modules[req]
-    except KeyError:
-        warnings.warn("The module {} is not present".format(req))
-    ic(globals())
+# def imp_mods(modules):
+#     import warnings
+#     pip_reqs = {"ic"}
+#     local_reqs = {"json"}
+#     # This is where all the classes or functions of a module will be located. It will point to its parent and will simply need to be named as a global variable 
+#     sub_mods = {}
+#     # reqs = pip_reqs.union(local_reqs)
+#     try:
+#         for req in pip_reqs:            
+#             globals()[req] = modules[req]
+#     except KeyError:
+#         warnings.warn("The module {} is not present".format(req))
+#     ic(globals())
 
 import sys, os
 from icecream import ic
@@ -229,9 +240,12 @@ from Modules.json_interaction import load_json
 
 
 # This is used in interaction with the json file
+# This path is globle since there are many differnet path files and tests may need to use other paramters than the default 
+path = 'Adaptive_params/Adaptive_values.json'
 class param_manager(object):
     def __init__(self):
-        self.data = load_json('Adaptive_params/Adaptive_values.json',dict_data=True)
+        self.path = path
+        self.data = load_json(self.path,dict_data=True)
         # ic(self.data.data)
 
     def access(self, key):
@@ -347,7 +361,8 @@ class value_calculations(object):
         return self._verify_range(val,0.05,0.65)
         
     def inlier_coeff(self):
-        val = (self.rel_bot/2/self.spacing)*(1+self.sense)
+        # val = (self.rel_bot/2/self.spacing)*(1+self.sense)
+        val = (self.rel_bot/1.5/self.spacing)*(1+self.sense)
         return self._verify_range(val,0.1,0.5)
 
     def width_adj(self,wid):
@@ -401,11 +416,70 @@ class value_calculations(object):
     def perc_diff(self, val1, val2):
         return abs(val1-val2)/val1
 
+def annotations_for_test(test_path):
+    from Modules.image_annotation import main 
+    
+
+class testing(object):
+    def __init__(self):
+        self.saver = save()
+        self.test_paths = [
+            "Adaptive_params\\tests\\small_corn",
+            "Adaptive_params\\tests\\mid_corn",
+            "Adaptive_params\\tests\\small_soybeans"
+        ]    
+
+    def image_tests(self):
+        from Modules.image_annotation import main 
+        from Algorithims_tst.prim_detector import inc_color_mask
+        import shutil 
+        import random
+        for test in self.test_paths:
+            imgs = prep("sample", os.path.join(test,"imgs"))
+            json_file = self.contains_json(test)
+            global path
+            if json_file != None:
+                path = json_file
+                # pm = param_manager(json_file)
+            else:
+                # ic(imgs)
+                json_path = main(random.choice(imgs["imgs"]))
+                new_path = os.path.join(test , "test.json")
+                shutil.copy(json_path, new_path)
+                assert os.path.exists(new_path), "Json file was not copied correctly"
+                path = new_path
+            
+            samples = disp(imgs, inc_color_mask)
+            # samples = disp(imgs, inc_color_mask, disp_cmd = "final")
+            ic(samples)
+
+
+    def contains_json(self,path):
+        for file in os.listdir(path):
+            if file.endswith(".json"):
+                return file 
+        return None 
+
+    def save_results(self,results, path, s_type = "imgs" ):
+        self.saver.save_data(results, s_type, path, "row_detection_results" )
+
+        
+def test():
+    test = testing()        
+    test.image_tests()
 
 
 if __name__ == "__main__":
     import sys, os 
     from icecream import ic
-    js = param_manager()
-    vc = value_calculations()    
-    vc.write_json()
+    from Modules.prep_input import interpetInput as prep 
+    from Modules.display_frames import display_dec as disp
+    from Modules.save_results import data_save as save
+
+    # js = param_manager()
+    # vc = value_calculations()    
+    # vc.write_json()
+    test()
+
+
+

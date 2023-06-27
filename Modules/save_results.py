@@ -10,6 +10,7 @@ from datetime import datetime
 from icecream import ic
 import re
 import numpy as np
+import shutil 
 
 """
 This will determine the correct action for the input type that it provided
@@ -35,6 +36,8 @@ class data_save(object):
             "vid": self.save_vid,
             "vids": self.save_vids
         }
+        self.params_save = save_params()
+
 
     def check_overwrite(self, path):
         if self.verify_success(path, True):
@@ -48,13 +51,17 @@ class data_save(object):
         # print(self.get_time())
         self.data_title = data_title if data_title else "test_{}".format(self.get_time())
         self.des_path = os.path.abspath(des_path)
+
+        self.params_save.make_folder(os.path.abspath(des_path), data_title)
+
+        self.des_path = self.params_save.folder_path
         self.save_type = save_type
         self.dtype = dtype
         self.data = data
         self.actions[self.dtype]()
 
     def save_img(self):
-        path = self.gen_file_name()
+        path = self.gen_file_name("result_{}".format(self.data_title))
         if self.check_overwrite(path):
             return
 
@@ -63,20 +70,22 @@ class data_save(object):
 
     def save_imgs(self):
         #  create directory for images
-        self.des_path = self.gen_file_name(folder=True)
+        # self.des_path = self.gen_file_name(folder=True)
+
         for i,img in enumerate(self.data):
-            path = self.gen_file_name("result_{}".format(i), False)
+            path = self.gen_file_name("result_{}".format(i))
             cv2.imwrite(path,img)
             assert self.verify_success(path), "image was not saved correctly"
     
     # The video will be a list of frames and we must convert it into a mp4 file
     def save_vid(self):
-        self.write_vid(self.gen_file_name(),self.data)
+        path = self.gen_file_name("result_{}".format(self.data_title))
+        self.write_vid(path,self.data)
     
     def save_vids(self):
-        self.des_path = self.gen_file_name(folder=True)
+        # self.des_path = self.gen_file_name(folder=True)
         for i,vid in enumerate(self.data):
-            self.write_vid(self.gen_file_name("result_{}".format(i), False),vid)
+            self.write_vid(self.gen_file_name("result_{}".format(i)),vid)
 
     def write_vid(self,path,vid,fps = 30.0):
         # Set up video writer
@@ -87,6 +96,7 @@ class data_save(object):
             ic(frame_height, frame_width, vid[0].shape)
 
         else:
+            ic(cap)
             cap = vid
 
             frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -131,7 +141,7 @@ class data_save(object):
 
 
     # Use the current time+test if there is no data_title
-    def gen_file_name(self, data_title = None, folder=False):
+    def gen_file_name(self, data_title = None):
             
         if data_title == None:
             data_title = self.data_title
@@ -142,17 +152,17 @@ class data_save(object):
             else:
                 save_type = ".jpg"
 
-        if folder:
-            path = os.path.join(self.des_path, data_title)
-            print(path)
-            # make folder in the desination path
-            if not os.path.exists(path):
-                os.mkdir(path)
-            else: 
-                raise Exception("Folder {} already exists please enter a uique folder name".format(path))
+        # if folder:
+        #     path = os.path.join(self.des_path, data_title)
+        #     print(path)
+        #     # make folder in the desination path
+        #     if not os.path.exists(path):
+        #         os.mkdir(path)
+        #     else: 
+        #         raise Exception("Folder {} already exists please enter a uique folder name".format(path))
 
-            assert self.verify_success(path), "Folder was not created correctly"
-            return path
+        #     assert self.verify_success(path), "Folder was not created correctly"
+        #     return path
 
         return os.path.join(self.des_path, data_title+save_type)
 
@@ -171,6 +181,39 @@ class data_save(object):
             return True
         # raise Exception("File was not saved correctly")
         return False
+
+class save_params(object):
+    def __doc__(self):
+        return "Utility: Save the parameters that are ascociated with the data that is being saved. A folder for the test is create along with a copy of the parameters json file."
+    
+    def __init__(self, json_path = "Adaptive_params/Adaptive_values.json"):
+        self.json_path = os.path.abspath(json_path)
+        self.folder_path = None
+
+    def make_folder(self ,des_path, data_title):
+
+        path = os.path.join(des_path, data_title)
+        print(path)
+        # make folder in the desination path
+        if not os.path.exists(path):
+            os.mkdir(path)
+        else: 
+            raise Exception("Folder {} already exists please enter a uique folder name".format(path))
+
+        assert os.path.exists(path), "Folder was not created correctly"
+        self.folder_path = path
+        self._add_json(self.json_path, data_title)
+   
+    # Require path to the current paramter json file being used 
+    def _add_json(self, json_path, data_title):
+        # copy the json file to the folder 
+        new_path = os.path.join(self.folder_path, data_title+".json")
+        shutil.copy(self.json_path, new_path)
+        assert os.path.exists(new_path), "Json file was not copied correctly"
+
+
+    
+        
 
     
 #### Tests ####
@@ -196,7 +239,7 @@ if __name__ == "__main__":
     # This is an abosolute path since the video files are too large to be uploaded to github
     vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
 
-    imgs = prep('sample',drones)["imgs"]    
+    # imgs = prep('sample',drones)["imgs"]    
     vids = prep('sample',vids)["vids"]
 
     im_saver = data_save()
