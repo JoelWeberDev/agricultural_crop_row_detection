@@ -23,9 +23,9 @@ Since the project is at the moment incomplete I have broken the project into 3 c
   </br>
   **Short clips of the row detection working** 
   
-  [![Detection on winter wheat with mask and noise](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Crop_recog_face_image.jpg)](https://youtu.be/lmLJby_kZS8)
+  [![Detection on winter wheat with mask and noise](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Crop_recog_face_image.jpg)](https://youtu.be/QxzcWDdI4Ac)
   
-  [![Detection on winter wheat without mask and noise](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Crop_recog_face_image_masked.jpg)](https://youtu.be/QxzcWDdI4Ac)
+  [![Detection on winter wheat without mask and noise](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Crop_recog_face_image_masked.jpg)](https://youtu.be/lmLJby_kZS8)
 
 
   ### Early Corn
