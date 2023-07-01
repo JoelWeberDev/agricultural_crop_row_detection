@@ -55,8 +55,10 @@ class generic(object):
         try:
           proj_point = (self.vanishing_point[1] - (point[1] - slope*point[0]))/slope
         except ZeroDivisionError or RuntimeWarning:
-          proj_point = point[0]
+          Warning.warn("Zero division error in slope calculation")
+          return False
         if proj_point > self.vanishing_point[0]-err_margin and proj_point < self.vanishing_point[0]+err_margin:
+
           return True
         return False
 

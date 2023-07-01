@@ -56,23 +56,29 @@ def display_dec(data, func = None,dispOrg = False,**kwargs):
     # Sample data structure: 
     def vid(sample):
         # anaylze the sample to determine how the data is stored
+        detected_frames = {}
         while True:
             ret, img = sample.read()
             if ret:
                 frames = apply_func(img)
                 if b: break
                 for title in frames.keys():       
+                    if title not in detected_frames.keys():
+                        print(title)
+                        detected_frames[title] = []
+                    detected_frames[title].append(cv2.cvtColor(frames[title], cv2.COLOR_BGR2RGB))
                     cv2.imshow(title, frames[title])
                 # cv2.waitKey(1)
 
             else:
                 break
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                return True
+                return True, detected_frames 
             elif cv2.waitKey(1) & 0xFF == ord('n'):
                 break
         sample.release()
         cv2.destroyAllWindows()
+        return True, detected_frames 
 
     def img(sample):
         while True:
@@ -98,7 +104,6 @@ def display_dec(data, func = None,dispOrg = False,**kwargs):
 
                 if key == 'imgs':
                     imgs = apply_func(sample)
-                    # print(len(imgs))
                     ret.append(imgs)
                     if len(imgs) > 1:
                         dispMat(imgs)
@@ -110,8 +115,10 @@ def display_dec(data, func = None,dispOrg = False,**kwargs):
                     cv2.destroyAllWindows()
 
                 elif key == 'vids':
-                    if vid(sample): 
-                        return
+                    vid_ret, vid_frames = vid(sample)
+                    if vid_ret: 
+                        return vid_frames
+                    ret.append(vid_frames)
         return ret
 
     return start_display(data)

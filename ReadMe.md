@@ -5,11 +5,27 @@ This system is designed to preform live detection of crop rows in fields with va
 ### Developed By Joel Weber for Living Acres Agrobotics
 
 ## Project Details 
-Since the project is at the moment incomplet I have broken the project into 3 components as they may interest a contributor or viewer
+Since the project is at the moment incomplete I have broken the project into 3 components as they may interest a contributor or viewer
 
 ***Disclaimer*** all the software here is provided as-is and may not be fully tested at the moment. 
 
 ***Updates*** Continual developments will periocically be made to the software as the product develops
+
+
+## Current Documenation
+  *Description* This section includes some examples of the model working on images and live video on multiple different crops and stages of growth. It also includes the issues that 
+  are evident in these working examples along with methods that are being impelemented to resolve those problems. 
+
+  ### Early Winter Wheat
+  **Analysis** Winter wheat samples like this have been the primary source of testing data up until this point. This demonstrates that the system is able to speparate rows that are 
+  in close proximity to eachother. In some of the samples have had stochasitic noise introduced to simulate variance in the envoronment or moderate weed foliage in the field. All the 
+  wheat in these images are spaced at an average of 18 inches
+  [![Detection on winter wheat with mask and noise](Demonstration_data\Readme_images\winter_wheat_1_mask_noise.jpg)](https://youtu.be/lmLJby_kZS8)
+  [![Detection on winter wheat without mask and noise](Demonstration_data\Readme_images\winter_wheat_1.jpg)](https://youtu.be/QxzcWDdI4Ac)
+
+
+  ### Early Corn
+  **Analysis** This here are some tests that were preformed on corn that was planted at 80 cm spacing. This test the models ability for precision when the plants are small and ability to detect when there are few rows in the frame. 
 
  ### Camera Data
   All test data has been gathered with a DJI mini se camera flying at 1 meter above the fields.

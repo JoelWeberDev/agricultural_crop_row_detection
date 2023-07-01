@@ -189,6 +189,8 @@ class hough_assessment(object):
 
             try:
                 slope = (y2-y1)/(x2-x1)
+                if abs(slope) < 0.05:
+                    continue
             except ZeroDivisionError or RuntimeWarning:
                 slope = np.inf
 
@@ -212,22 +214,18 @@ class hough_assessment(object):
                 """** special Note: We use the x values at the lowest point of the image for that is the place where we want to process that rows with the most certainty"""
                 try:
                     intercept_bot = int((mask.shape[0]- (y1-(slope*x1)))/slope)
-                except ZeroDivisionError as e:
+                except OverflowError:
+                    ic( x1, y1, x2, y2,slope)
                     if x1 > mask.shape[1]/2-err_margin and x1 < mask.shape[1]/2+err_margin:
                         intercept_bot = mask.shape[1]/2
-                        slope = 1e10
-                    else: 
-                        continue
-                
-                except OverflowError as e:
-                    if x1 > mask.shape[1]/2-err_margin and x1 < mask.shape[1]/2+err_margin:
-                        intercept_bot = mask.shape[1]/2
-                        slope = 1e10
+                        slope = 10e10
                     else: 
                         continue
 
                 except ValueError or RuntimeWarning:
                     continue
+                # if intercept_bot > 318 and intercept_bot < 326:
+                    # print( x1, y1, x2, y2,slope, intercept_bot)
                 if "avg" in self.args:
                     good_lines.append([slope,intercept_bot])
                     self.good_lns.append([slope,intercept_bot])
@@ -263,7 +261,7 @@ class hough_assessment(object):
                 elif len(lns) == 1:
                     pts = self.get_pts(lns[0][0],lns[0][1])
                 else:
-                    av_ln = self.avg_lns(np.array(lns))
+                    av_ln = lc.avg_slope_lns(lns)
                     # if av_ln[1] > 300 and av_ln[1] < 350 and not grp:
                     #     ic(lns)
 
@@ -277,11 +275,12 @@ class hough_assessment(object):
             elif prev:
                 if not np.isnan(lns[0]):
                     pts = self.get_pts(lns[0],lns[1])
+                    self.ln_col = (255,0,0)
                 else: 
                     ic(self.vp)
                     pts = [self.vp[0],self.vp[1], lns[1], self.im_size[0]]
                     pts = [round(pt) for pt in pts]
-                    ic(pts)
+                    self.ln_col = (0,0,255)
                 cv2.line(res, (pts[0],pts[1]), (pts[2], pts[3]), self.ln_col, 2)
             
             # Place all the grouped lines on the image
@@ -291,17 +290,6 @@ class hough_assessment(object):
                     cv2.line(res, (pts[0],pts[1]), (pts[2], pts[3]), self.ln_col, 2)
         return res
         
-        
-    def avg_lns(self, pts_gr=None): 
-        # Check if all the slopes have the same sign
-        if (pts_gr[:,0] < 0).all() or (pts_gr[:,0] > 0).all():
-            # If they do then average the slopes and the intercepts
-            return np.average(pts_gr,axis=0)
-        else:
-            sl_inv = 1/pts_gr[:,0]
-            # ic(sl_inv)
-            return np.array([1/np.average(sl_inv), np.average(pts_gr[:,1])])
-
 
     # To obtain optimal results ensure that samp_num > (upper-lower)/col_inc
     def color_splits(self, samp_num, col_inc, upper= 65,lower = 30):
@@ -313,14 +301,16 @@ class hough_assessment(object):
         return color_map
     
 
+    # ** Note the intercept is at the bottom of the image and not at 0
     def get_pts(self,slope, intercept):
         try:
-            int_nrm =round(-1*(intercept*slope-self.ret["org"].shape[0])) 
-        except OverflowError :
-            int_nrm = 10e10
-        x1 = -1*int(int_nrm/slope)
+            zero_int = -1*round(self.ret["org"].shape[0] - (slope*intercept))
+            x1 = round(zero_int/slope)
+        except OverflowError:
+            print("Overflow Error", slope, intercept)
+            x1 = round(intercept)
         y1 = 0
-        x2 = int(intercept)
+        x2 = round(intercept)
         y2 = self.ret["org"].shape[0]
         return (x1,y1,x2,y2)
     
@@ -333,21 +323,6 @@ class hough_assessment(object):
         # Alternaive to this could be the random color generator
         ln_col = np.random.randint(50,255,(3),dtype=int)
         self.ln_col = [ln_col.item(0),ln_col.item(1),ln_col.item(2)]
-        
-
-        # self.ln_col = [0,0,0]
-        # upper = 255*3
-        # lower = 127
-        # up_sl = 10
-        # low_sl = 0.75
-        # col_inc = (upper-lower)/(up_sl-low_sl)
-        # sl_col = int(abs(slope)*col_inc)
-        # for i in range(3):
-        #     if sl_col > 255:
-        #         sl_col -= 255
-        #         self.ln_col[i] = 255
-        #     else:
-        #         self.ln_col[i] = sl_col
 
     def pre_process(self, img, des=["gray"],**kwargs):
         def mask(img=img):
@@ -440,6 +415,17 @@ def hough_test(img):
             cv2.line(mask, (x1,y1), (x2,y2), (255,255,0), 2)
 
     return {"mask":mask}
+
+#### Tests ####
+
+def test_get_pts():
+    samp_im = np.zeros([360,640])
+    ha = hough_assessment(samp_im,samp_im,pure=None)
+    inf_ex = [np.inf,300]    
+    norm_pt = [5e9,360]
+
+    ic(ha.get_pts(norm_pt[0],norm_pt[1]))
+    ic(ha.get_pts(inf_ex[0],inf_ex[1]))
     
 
 def main():
@@ -453,4 +439,5 @@ def main():
     disp(dataCont, hough_test)
 
 if __name__ == "__main__":
-    main()
+    # main()
+    test_get_pts()

@@ -52,6 +52,21 @@ def avg_lines(lines):
     cnvt_lines = cnvt_iterables(lines)
     return np.average(cnvt_lines,axis=0)
 
+
+def avg_slope_lns(pts_gr): 
+    pts_gr = cnvt_iterables(pts_gr)
+    # Check if all the slopes have the same sign
+    if (pts_gr[:,0] < 0).all() or (pts_gr[:,0] > 0).all():
+        # If they do then average the slopes and the intercepts
+        return np.average(pts_gr,axis=0)
+    else:
+        sl_inv = 1/pts_gr[:,0]
+        slope = math.tan(math.acos(np.average(sl_inv)))
+
+        intercept = pts_gr[0,1]
+
+        return np.array([slope, np.average(pts_gr[:,1])])
+
 def get_vec(pt1,pt2):
     # Get the angle from the first point to the second
     # Get the slope of the line

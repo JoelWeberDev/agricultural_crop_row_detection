@@ -146,8 +146,9 @@ class ag_lines(object):
                     iters = np.unique(np.concatenate((iters,inlier_iters)))
                     group.append(inlier_vals.tolist())
                     # group += lines[inlier_iters].tolist()
-                    av_ln = np.average(inlier_vals,axis=0)
-                    start = av_ln[1]
+                    # av_ln = np.average(inlier_vals,axis=0)
+                    # av_ln = lc.avg_slope_lns(inlier_vals)
+                    start = np.average(inlier_vals[:,1])
                 start += disp
                 
             # return sum,group,lines
@@ -239,10 +240,10 @@ class ag_lines(object):
     #     return (pt1,pt2)
 
     def _get_pts(self,slope, intercept):
-        int_nrm =int(-1*(intercept*slope-self.img.shape[0])) 
-        x1 = -1*int(int_nrm/slope)
+        int_nrm = -1*round((intercept*slope-self.img.shape[0])) 
+        x1 = round(int_nrm/slope)
         y1 = 0
-        x2 = int(intercept)
+        x2 = round(intercept)
         y2 = self.img.shape[0]
         return [(x1,y1),(x2,y2)]
 

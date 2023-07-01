@@ -15,6 +15,7 @@ import path
 import sys,os
 from icecream import ic
 import time
+import warnings
 
 
 try:
@@ -83,6 +84,17 @@ def save_lns():
     from data_base_manager import data_base_manager as dbm
     return dbm(path = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/python_soybean_c/saved_tests/saved_lines", data_name = 'winter_wheat.csv')
 
+def save_sample(data,**kwargs):
+    s_type = kwargs.get("s_type","vid")
+    s_data = data[list(data.keys())[0]]
+    from Modules.save_results import data_save as ds
+    saver = ds()
+    ic(type(s_data), len(data), data.keys())
+    if s_type == "vid":
+        saver.save_data(s_data,"vid", "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/python_soybean_c/saved_tests", "detected_vid_untrammeld")
+        saver.save_data(s_data,"imgs", "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/python_soybean_c/saved_tests", "detected_imgs_untrammeld")
+    elif s_type == "img":
+        saver.save_data(s_data,"img", "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/python_soybean_c/saved_tests", "detected_img")
 
 
 """
@@ -107,14 +119,15 @@ def inc_color_mask(img, **kwargs):
     # Detection is a video
     video = kwargs.get("video",False)
     # prev_lines = kwargs.get("prev_lines",None)
+    row_num = params.access("row_num")
 
 
 
 
-    no_noise = img.copy()
+    no_noise_org = pre_process(img.copy(), des=["resize"])
     if noise_tst:
         img = noise(img) 
-    no_noise = pre_process(no_noise, des=["resize","mask"])
+    no_noise = pre_process(no_noise_org.copy(), des=["mask"])
     img = pre_process(img, des=["resize"])
 
     # Initailize the contour class:
@@ -169,16 +182,23 @@ def inc_color_mask(img, **kwargs):
     if hough_cmd == "avg" and len(imgs.good_lns) > 1:
         # total_lns = imgs.good_lns
 
-        res_img = org.copy()
+        res_img = no_noise_org.copy()
 
         final_rows = agl(img, imgs.good_lns)
 
         if video and type(prev.prev_lines) != type(None):
             # ic(prev.prev_lines)
             groups, score , best_lines = final_rows.calc_pts([0,img.shape[0]],True)
-            # Later development: Could select the top lines by the percentage of the total lines that are contained for a more adaptvie representation of the line set.
+            ic([len(i) for i in groups])
+
             top_inds = np.argsort(np.array(score))[::-1][:round(len(score)/3)]
-            best_grps = [groups[i] for i in top_inds]
+            num_rows_filt = np.where(np.array([len(i) for i in groups]) > row_num/2)[0]
+            ic(num_rows_filt)
+            if len(num_rows_filt) > 0:
+                best_grps = [groups[i] for i in num_rows_filt]
+            else: 
+                raise warnings.warn("No rows were detected in the image")
+                best_grps = [best_lines] 
 
             gr_lines = prev.best_match(best_grps)[3]
             prev.prev_lines = gr_lines
@@ -199,20 +219,43 @@ def inc_color_mask(img, **kwargs):
 
     return imgs.ret
 
-# 
+def calibrate(data):
+    from Modules.image_annotation import video_main as vm
+    vm(data)
+
+def frames_of_concern(dataCont, frame_range = (280, 307)):
+    print(dataCont.keys())
+    cap = dataCont["vids"][0]
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_range[0]) 
+    for i in range(frame_range[0], frame_range[1]):
+        ret, frame = cap.read()
+        dataCont["imgs"].append(frame)
+
+    dataCont["vids"] = []
+    disp(dataCont, inc_color_mask , video = True)
+
 
 
 def main():
-
+    ic.disable()
     data_base = save_lns()
-    # drones = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_images/Winter Wheat"
+
     drones = 'Test_imgs/winter_wheat_stg1'
     vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
-    # ic.disable()
-    dataCont = prep('sample',drones)    
-    # dataCont = prep('sample',vids)
 
-    disp(dataCont, inc_color_mask , video = True)
+    # dataCont = prep('sample',drones)    
+
+    dataCont = prep('sample',vids)
+    dataCont["vids"] = dataCont["vids"][0:1]
+
+    # require calibrate to be run first
+    # calibrate(dataCont)
+    detected_frames = disp(dataCont, inc_color_mask , video = True, noise_tst = False, disp_cmd = "final")
+    save_sample(detected_frames)
+
+    # Naviagate and directly proceess probematic frames
+    # frames_of_concern(dataCont, frame_range = (131, 139))
+
     # disp(dataCont, inc_color_mask,  disp_cmd = "final")
     # disp(dataCont, inc_color_mask, hough_cmd = "avg", disp_cmd = "disp_steps", save_lns = data_base)
     # disp(dataCont, edge_detection)

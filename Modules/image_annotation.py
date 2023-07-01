@@ -282,6 +282,8 @@ class proc_annotations(object):
     def _make_list(self, iter):
         iterable_types = (list,tuple,np.ndarray)
 
+        if not type(iter) in iterable_types:
+            raise TypeError("Input must be an iterable type")
         if  type(iter[0]) in iterable_types:
             return [self._make_list(it) for it in iter]
         else: 
@@ -513,9 +515,8 @@ def test(img):
     # return proc_annotations(img,img_interact.annotations).json_info
     return proc_annotations(img,test_annots).json_info
 
-def video_main():
-    vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
-    vids = prep('sample',vids) 
+def video_main(data=None):
+    vids = prep('sample',"C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids") if type(data) == type(None) else data 
     cap = vids['vids'][0]
     ret, frame = cap.read()
     main(frame)

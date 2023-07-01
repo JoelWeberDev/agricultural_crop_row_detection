@@ -126,8 +126,9 @@ class process_prev_lines(object):
 
     def _tally_missing_lines(self, prev, cur):
         missed = np.intersect1d(np.where(np.isnan(cur[:,0])) ,np.where(~np.isnan(prev[:,0])))
+        absent = np.intersect1d(np.where(np.isnan(cur[:,0])) ,np.where(np.isnan(prev[:,0])))
         # print(np.where(np.isnan(cur[:,0])), np.where(~np.isnan(prev[:,0])), len(missed))
-        return len(missed)
+        return len(missed), len(absent)
 
     # Group 1 i
     def error_between_groups(self, prev, cur):
@@ -153,9 +154,14 @@ class process_prev_lines(object):
 
         #  Here the score is implemented to account for the number of missing lines. The weight of a missing line could be somewhat subjective and thus we will add it to the adaptive parameters. Things like 
         # number of rows and the likelyhood of missing a line will contribute to this function.
+        # This is somewhat arbitrary but 1/3 seems to be a good amout
+        log_coeff = 1/3
+        coeff = 1.2
         res = self._bin_search_min(prev_ints, cur_ints, self.spacing*-1, self.spacing) if len_diff > 0 else self._bin_search_min(cur_ints, prev_ints, self.spacing*-1, self.spacing)
-        missed_rows = self._tally_missing_lines(prev_ints[res[1]], cur_ints) if len_diff > 0 else self._tally_missing_lines(prev_ints, cur_ints[res[1]])
-        score = (res[0]+res[2])+(self.spacing*math.log(missed_rows+0.5, len(prev_ints))) if missed_rows > 0 else (res[0]+res[2])
+        missed_rows, absent = self._tally_missing_lines(prev_ints[res[1]], cur_ints) if len_diff > 0 else self._tally_missing_lines(prev_ints, cur_ints[res[1]])
+        # error = lambda rows : self.spacing*math.log(rows+1, len(prev_ints))
+        error = lambda rows : self.spacing*math.sqrt(rows/len(prev_ints))*coeff
+        score = (res[0]+res[2])+error(missed_rows)+(log_coeff)*error(absent) if missed_rows > 0 else (res[0]+res[2])
         
         return score, missed_rows, res[2], cur_ints
 
@@ -167,7 +173,7 @@ class process_prev_lines(object):
     def calc_group_intervals(self, lines, edges=True,**kwargs):
         avg = kwargs.get("avg", False)
         if avg:
-            avg_lines = np.array([lc.avg_lines(lns) for lns in lines])
+            avg_lines = np.array([lc.avg_slope_lns(lns) for lns in lines])
         else: 
             avg_lines = np.array(lines)
         # sort lines
