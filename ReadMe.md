@@ -33,8 +33,10 @@ Since the project is at the moment incomplete I have broken the project into 3 c
 
  ### Color Layer Approach:
  **Description** The model is currently using a series of layers that progressively separate all the pixels that lie within a specific sliver of the green color hue. A line detection algorithm is performed on one each of these layers independently. The lines from each of these layers are brought together into one frame where they are filtered by line gradient and the areas of the image that have the highest density of lines are identified as the next probable crop rows within the image frame. *Note* This will be the approach that is used with stereo vision except instead of detection being applied to zones of green pixels the heights in a [topographic](https://en.wikipedia.org/wiki/Topographic_map) frame constructed by the stereo camera will be used. 
- 
+ #### Layered Sample Without Line Grouping 
  ![Non-grouped line frame](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/No_line_grouping.png)
+
+ #### Layered Sample With Line Grouping (Uses many more layers which increases detection quality, but decreases speed)
  ![Grouped line frame](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Good_detec.png)
  
 
