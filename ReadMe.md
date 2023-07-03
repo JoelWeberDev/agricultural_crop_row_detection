@@ -17,11 +17,15 @@ Since the project is at the moment incomplete I have broken the project into 3 c
   are evident in these working examples along with methods that are being implemented to resolve those problems. 
 
   ### Early Winter Wheat
-  **Analysis** Winter wheat samples like this have been the primary source of testing data up until this point. This demonstrates that the system is able to separate rows that are 
+  **Analysis** Winter wheat samples like this have been the primary testing data source up until now. This demonstrates that the system is able to separate rows that are 
   in close proximity to each other. Some of the samples have had stochastic noise introduced to simulate variance in the environment or moderate weed foliage in the field. All the 
-  wheat in these images is spaced at an average of 18 inches
-  [![Detection on winter wheat with mask and noise](Demonstration_data\Readme_images\winter_wheat_1_mask_noise.jpg)](https://youtu.be/lmLJby_kZS8)
-  [![Detection on winter wheat without mask and noise](Demonstration_data\Readme_images\winter_wheat_1.jpg)](https://youtu.be/QxzcWDdI4Ac)
+  wheat in these images is spaced at an average of 18 inches. 
+  </br>
+  **Short clips of the row detection working** 
+  
+  [![Detection on winter wheat with mask and noise](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Crop_recog_face_image.jpg)](https://youtu.be/QxzcWDdI4Ac)
+  
+  [![Detection on winter wheat without mask and noise](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Crop_recog_face_image_masked.jpg)](https://youtu.be/lmLJby_kZS8)
 
 
   ### Early Corn
