@@ -242,26 +242,38 @@ from Modules.json_interaction import load_json
 # This is used in interaction with the json file
 # This path is globle since there are many differnet path files and tests may need to use other paramters than the default 
 path = 'Adaptive_params/Adaptive_values.json'
+# The uiversal settings simply assist in ensuring that the correct parameters are loaded when there are other preconfigured json files with a testing data set
 class param_manager(object):
     def __init__(self):
-        self.path = path
+        self.uiversal_settings = load_json("Adaptive_params/parent_setting.json",dict_data=True)
+        self.path = self.uiversal_settings.find_key("parameter path", ret_val=True)
         self.data = load_json(self.path,dict_data=True)
-        # ic(self.data.data)
 
-    def access(self, key):
-        val = self.data.find_key(key, ret_val=True)
+    def access(self, key, universal=False):
+        data = self.uiversal_settings if universal else self.new_data()
+        val = data.find_key(key, ret_val=True)
+
         assert val != -1, "The key {} does not exist".format(key)
         return val
 
-    def update(self, key, val,title=None):
-        # if type(val) == dict:
-        #     for k,v in val.items():
-        #         self.update(k,v,key)
+    def update(self, key, val,title=None, universal=False):
+        data = self.uiversal_settings if universal else self.new_data()
+        if universal and key == "parameter path":
+            self.new_data() 
+            self.path = val
         try:
-            self.data.write_json({key:val},data_title=title)
+            data.write_json({key:val},data_title=title)
         except Exception as e:
             # ic(key, val, title, e)
-            self.data.write_json({key:val},data_title=title)
+            data.write_json({key:val},data_title=title)
+
+    def new_data(self):
+        latest_path = self.uiversal_settings.find_key("parameter path", ret_val=True)
+        if self.path != latest_path:
+            ic(latest_path, self.path)
+            self.path = latest_path
+            self.data = load_json(self.path,dict_data=True)
+        return self.data
 
 from Modules import json_interaction as ji
 pm = param_manager()
@@ -428,6 +440,7 @@ class testing(object):
             "Adaptive_params\\tests\\mid_corn",
             "Adaptive_params\\tests\\small_soybeans"
         ]    
+        self.params = param_manager()
 
     def image_tests(self):
         from Modules.image_annotation import main 
@@ -437,9 +450,9 @@ class testing(object):
         for test in self.test_paths:
             imgs = prep("sample", os.path.join(test,"imgs"))
             json_file = self.contains_json(test)
-            global path
+
             if json_file != None:
-                path = json_file
+                js_path = os.path.join(test, json_file)
                 # pm = param_manager(json_file)
             else:
                 # ic(imgs)
@@ -447,12 +460,15 @@ class testing(object):
                 new_path = os.path.join(test , "test.json")
                 shutil.copy(json_path, new_path)
                 assert os.path.exists(new_path), "Json file was not copied correctly"
-                path = new_path
-            
+                js_path = new_path
+
+            self.params.update("parameter path", js_path, title="user_input", universal=True)
+            self._test_json_loads(js_path)
             samples = disp(imgs, inc_color_mask)
             # samples = disp(imgs, inc_color_mask, disp_cmd = "final")
-            ic(samples)
-
+            # ic(samples)
+        global path
+        # self.params.update("alternative_path", path, title="user_input") 
 
     def contains_json(self,path):
         for file in os.listdir(path):
@@ -462,6 +478,15 @@ class testing(object):
 
     def save_results(self,results, path, s_type = "imgs" ):
         self.saver.save_data(results, s_type, path, "row_detection_results" )
+
+    def _test_json_loads(self, cur_json):
+        param_path = os.path.abspath(os.path.realpath(self.params.path))
+        desired_path = os.path.abspath(os.path.realpath(cur_json))
+        alleged_path = os.path.abspath(os.path.realpath(self.params.access("parameter path",universal=True)))
+        ic(param_path, desired_path, alleged_path)
+        assert param_path == desired_path == alleged_path, "Current path json file and parameter path do not match" 
+        
+
 
         
 def test():
@@ -480,6 +505,8 @@ if __name__ == "__main__":
     # vc = value_calculations()    
     # vc.write_json()
     test()
+    import system_operations as sys_ops
+    sys_ops.system_reset()
 
 
 

@@ -40,7 +40,10 @@ class ag_lines(object):
     def __init__(self,img,lines, **kwargs):
         # ic(lines, type(lines))
         self.img = img
+
+        assert len(lines) > 1, "No lines were detected in the image"
         self.lines = self._censor_inp(lines) 
+
         # ic(self.lines, type(self.lines))
         self.conversion_table = {"m":1000,"cm":10,"km":1000000,"in":25.4,"ft":304.8,"yd":914.4,"mi":1609344, "mm":1}
         self.vpc = vpc()
@@ -103,8 +106,13 @@ class ag_lines(object):
         st_pt = self._censor_inp(st_pt).ravel()
         
         incpt_lns = np.array([[ln[0],self._calc_intercept(ln,st_pt[1])] for ln in self.lines])
-        srt_lns = incpt_lns[incpt_lns[:,1].argsort()]
+        # ensure that the no lines are lost in the process of conversion to intercepts
+        assert len(incpt_lns) == len(self.lines), "The number of lines and intercepts do not match"
 
+        srt_lns = incpt_lns[incpt_lns[:,1].argsort()]
+        # enusre that the lines are sorted in ascending order
+        assert len(srt_lns) == len(self.lines), "The number of lines and sorted lines do not match"
+        
         disp = self._calc_row_disparity(st_pt)
         # ic(disp)
         x_min,x_max = srt_lns[0,1], srt_lns[-1,1]
@@ -118,6 +126,8 @@ class ag_lines(object):
         # disp = self._calc_row_disparity(st_pt)
 
         st_pt,incpt_lns,srt_lns, disp,minmax = self._proc_lines(st_pt)
+
+        assert len(srt_lns) > 1, "No lines provided please provide at least 1 group of lines to calc_pts"
 
         """
         Take both the inlier and talliable error margins and proform the binary search on them to determine how many lines are to be tallied. 
@@ -172,14 +182,20 @@ class ag_lines(object):
             if len(scored_grp) > 0:
                 scored_grps.append(scored_grp)
                 scores.append(tot_score)
+                i += 1
             rem_vals = np.unique(np.concatenate((increm[2],decrem[2])),axis=0).astype(int)
             new = np.delete(srt_lns,rem_vals,axis=0)
             srt_lns = new[new[:,1].argsort()]
 
-            i += 1
 
 
-        res = list(itertools.chain(*scored_grps[max_score[1]]))
+        try:
+            res = list(itertools.chain(*scored_grps[max_score[1]]))
+        except IndexError:
+            ic(len(scored_grps))
+
+            res = []
+
         if ret_ranked_grps:
             return scored_grps, scores,scored_grps[max_score[1]]
 

@@ -49,7 +49,7 @@ class hough_assessment(object):
         # self.cmd = cmd
 
         self.im_count = 0
-        self.total_pts = np.sum(mask_init >0)
+        self.total_pts = np.sum(mask_init >0) 
 
         self.good_lns = []
         self.grouper = grp()

@@ -29,7 +29,7 @@ class load_json(object):
     # - Mount height from neutral point (mm)
     # - Mount angle from neutral point degrees defualt
     def load_data(self):
-        ic("Loading camera parameter")
+        # ic("Loading camera parameter")
         with open(self.path) as f:
             self.data= json.load(f)["data"]
             f.close()

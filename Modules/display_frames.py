@@ -9,6 +9,9 @@ from moviepy.editor import VideoClip
 from moviepy.video.io.bindings import mplfig_to_npimage
 
 
+# reconfig = sys_ops.system_reconfig()
+
+
 # Module to display images and videos
 # Function Outline:
   # - Recieve frame

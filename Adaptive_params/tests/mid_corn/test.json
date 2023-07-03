@@ -19,7 +19,8 @@
             "row_count": 2,
             "spacing": 18,
             "plant_size": 5,
-            "row_width": 3
+            "row_width": 3,
+            "alternative_json": "Adaptive_params/Adaptive_values.json"
         },
         "ransac_params": {
             "max_err": 0.001

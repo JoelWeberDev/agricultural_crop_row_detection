@@ -36,7 +36,7 @@ except ModuleNotFoundError:
     sys.path.append(os.path.abspath(os.path.join('.')))
     from Adaptive_params.Adaptive_parameters import param_manager as ap
     from Modules import line_calculations as lc
-    from aggregate_lines import  ag_lines ,test as alg_test
+    from Algorithims_tst.aggregate_lines import  ag_lines ,test as alg_test
 
 
 class process_prev_lines(object):

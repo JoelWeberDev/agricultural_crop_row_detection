@@ -15,6 +15,10 @@ Global tasks:
  - make generic data structures for images and groups of images that will be universal
 '''
 
+# from Modules.prep_input import interpetInput as prep
+# from Modules.display_frames import display_dec as disp
+# from 
+
 
 """
 Class outline:
@@ -27,32 +31,68 @@ Class outline:
 def imp_mods(modules):
     import warnings
     pip_reqs = {"cv2", "np", "time", "ic" }
-    # local_reqs = {"prep", "disp", "proc", "ap", "noise", "load_json"}
+    local_reqs = {"prep", "disp", "proc", "ap", "noise", "load_json"}
     # This is where all the classes or functions of a module will be located. It will point to its parent and will simply need to be named as a global variable 
-    # reqs = pip_reqs.union(local_reqs)
+    reqs = pip_reqs.union(local_reqs)
 
     try:
         for req in pip_reqs:            
             globals()[req] = modules[req]
     except KeyError:
         warnings.warn("The module {} is not present".format(req))
+    # ic(globals())
 
-
-        
-class apply_funcs(object):
-    def __init__(self):
-        self.funcs = {
-            "noise": {}
-        }
-
-    def gen_funcs(self, des = None):
-        pass
 
 def main():
+    # Import the modules
     # Call the primary detector module
     from Algorithims_tst.prim_detector import main as mn
     # Run the module which will begin the process of the entire program
     mn()
+
+
+# sample data tests
+from Modules.prep_input import interpetInput as prep
+class test_data(object):
+    def __doc__(self):
+        return "This is the primary testing hub of all the sample data that is currently tabulated and calibrated for the project."
+    def __init__(self):
+        from Adaptive_params import Adaptive_parameters as ap
+        self.ap = ap
+        self.ap_test = ap.testing()
+
+        self.drones = 'Test_imgs/winter_wheat_stg1'
+        self.vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
+
+        self.test_paths = [
+            "Adaptive_params\\tests\\small_corn",
+            "Adaptive_params\\tests\\mid_corn",
+            "Adaptive_params\\tests\\small_soybeans"
+        ]    
+
+    # The path should be linked to the data folder. If the folder has a JSON file that will be used as the calibration file otherwise the user will be reqired to preform a 
+    # manual image calibration.
+    def load_data(self, data_path):    
+        from Modules.json_interaction import load_json
+        import os
+
+        imgs = os.listdir(data_path)
+
+        json_path = self.ap_test.contains_json(data_path)
+        # Load the images
+        # Return the images and the calibration
+        return imgs, json_path 
+
+    def run_test(self, test_path):
+        # Load the data
+        imgs, cailb_json = self.load_data(test_path)
+
+        # Run the main module
+        from Algorithims_tst import prim_detector as pd
+
+        self.ap.path = cailb_json
+
+        pd.main(imgs)
 
 
 

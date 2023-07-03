@@ -30,11 +30,15 @@ from Modules.prep_input import interpetInput as prep
 from Modules.display_frames import display_dec as disp
 from Modules.Image_Processor import apply_funcs as pre_process 
 
+import system_operations as sys_ops
 from Algorithims_tst.aggregate_lines import ag_lines as agl
 
 from Adaptive_params import Adaptive_parameters as ap
 from Algorithims_tst.MAKE_SOME_NOISE import noise 
-from consider_prev_lines import process_prev_lines as prev_lns
+try:
+    from consider_prev_lines import process_prev_lines as prev_lns
+except:
+    from Algorithims_tst.consider_prev_lines import process_prev_lines as prev_lns
 
 params = ap.param_manager()
 prev = prev_lns(avg=True)
@@ -81,7 +85,8 @@ def edge_detection(src_im, des = ["sobelx","sobely","sobelxy","laplacian"]):
 
 def save_lns():
     # from Modules.data_base_manager import data_base_manager as dbm
-    from data_base_manager import data_base_manager as dbm
+
+    from Algorithims_tst.data_base_manager import data_base_manager as dbm
     return dbm(path = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/python_soybean_c/saved_tests/saved_lines", data_name = 'winter_wheat.csv')
 
 def save_sample(data,**kwargs):
@@ -105,7 +110,8 @@ The filters that the image passes through
  4. 
 """
 def inc_color_mask(img, **kwargs):
-
+    ic(params.access("row_num"))
+    # ic.disable()
     # make defaults for the kwargs:
     upper = kwargs.get("upper",[75,255,255]) 
     lower = kwargs.get("lower",[30,50,50]) 
@@ -120,8 +126,6 @@ def inc_color_mask(img, **kwargs):
     video = kwargs.get("video",False)
     # prev_lines = kwargs.get("prev_lines",None)
     row_num = params.access("row_num")
-
-
 
 
     no_noise_org = pre_process(img.copy(), des=["resize"])
@@ -236,16 +240,19 @@ def frames_of_concern(dataCont, frame_range = (280, 307)):
 
 
 
-def main():
-    ic.disable()
+def main(data_path=None,**kwargs):
+
+    # ic.disable()
     data_base = save_lns()
 
     drones = 'Test_imgs/winter_wheat_stg1'
     vids = "C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids"
 
+    if type(data_path) == type(None): 
+        data_path = vids 
     # dataCont = prep('sample',drones)    
 
-    dataCont = prep('sample',vids)
+    dataCont = prep('sample',data_path)
     dataCont["vids"] = dataCont["vids"][0:1]
 
     # require calibrate to be run first
@@ -259,6 +266,8 @@ def main():
     # disp(dataCont, inc_color_mask,  disp_cmd = "final")
     # disp(dataCont, inc_color_mask, hough_cmd = "avg", disp_cmd = "disp_steps", save_lns = data_base)
     # disp(dataCont, edge_detection)
+    import system_operations as sys_ops
+    sys_ops.system_reset()
 
 
 if __name__ == "__main__":
