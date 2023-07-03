@@ -31,6 +31,13 @@ Since the project is at the moment incomplete I have broken the project into 3 c
   ### Early Corn
   **Analysis** Here are some tests that were performed on corn that was planted at 80 cm spacing. This test the model's ability for precision when the plants are small and its ability to detect when there are few rows in the frame. 
 
+ ### Color Layer Approach:
+ **Description** The model is currently using a series of layers that progressively separate all the pixels that lie within a specific sliver of the green color hue. A line detection algorithm is performed on one each of these layers independently. The lines from each of these layers are brought together into one frame where they are filtered by line gradient and the areas of the image that have the highest density of lines are identified as the next probable crop rows within the image frame. *Note* This will be the approach that is used with stereo vision except instead of detection being applied to zones of green pixels the heights in a [topographic](https://en.wikipedia.org/wiki/Topographic_map) frame constructed by the stereo camera will be used. 
+ 
+ ![Non-grouped line frame](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/No_line_grouping.png)
+ ![Grouped line frame](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/Good_detec.png)
+ 
+
  ### Camera Data
   All test data has been gathered with a DJI mini se camera flying at 1 meter above the fields.
   To calibrate for a different camera execute the following steps:
@@ -45,7 +52,7 @@ Since the project is at the moment incomplete I have broken the project into 3 c
   
   **Model Outline**
    1. The images or frames from the input folder are opened with the cv2.imread function.
-   2. The frame is then resized, blurred, and converted to a hsv color format.
+   2. The frame is then resized, blurred, and converted to a Hsv color format.
    3. In the edge_detection module the green colors are extracted from the image through the cv2.inRange function.
    4. This mask is then subdivided into multiple masks which define a more strict range of green shades.
    5. The [cv2.HoughlinesP](https://docs.opencv.org/3.4/dd/d1a/group__imgproc__feature.html#ga8618180a5948286384e3b7ca02f6feeb) function is performed on each of the masked images including the original.
@@ -53,7 +60,8 @@ Since the project is at the moment incomplete I have broken the project into 3 c
    7. The remaining lines are grouped by proximity and derivative.
    8. All the grouped lines from every mask are gathered and processed to determine where the most probable location of the crop rows based on the distribution of the lines.
    9. These rows are returned as the detected rows.
-  The software is currently under construction and may require some adaptation to achieve the correct performance 
+  The software is currently under construction and may require some adaptation to achieve the correct performance.
+
  ### Next Steps 
   **Adaptive Paramters**
    We are currently working to bring every hard-coded value for a wide array of functions into one place that will calculate them relative to the specific nuances that may be present in the environment. This adaptive parameter model will also double as the hub for the machine learning aspect of the model where the optimal set of values to input into the function can be determined automatically.
@@ -67,11 +75,14 @@ Since the project is at the moment incomplete I have broken the project into 3 c
   - C++: The whole process is going to be rewritten in C++ to boost speed and performance. The Python that is being used now is solely for the purposes of prototyping
   - When main is added there will be an I/O interaction to set user values that are needed. (Right now they are just hidden in Adaptive_values.json)
 
- ### Visions
+ ### Future Plans for Development
   **Stereo Vision**:
    The final objective is to develop this system as a module that can be installed on the [OAK-D-CM4](https://docs.luxonis.com/projects/hardware/en/latest/pages/DM1097.html) stereo vision camera. This will allow for the 3D processing of the field to work in parallel with the color analysis. 
+   **Machine Learning for Row Recognition**
+   The plan is to release an initial testing prototype of the project that will gather data while in use. The data that is collected will be used to train special classifier models tailored to the detection of the crop rows. This development has the potential to massively boost performance and decrease the degree of manual programming that will be required.
+   
 
 
 ## Contibutuions
-Pull request are welcome. Contact me at joelweberdevelopment@gmail.com to express any comments or concerns.
+Pull requests are welcome. Contact me at joelweberdevelopment@gmail.com to express any comments or concerns.
 
