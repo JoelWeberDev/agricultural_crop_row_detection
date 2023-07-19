@@ -29,7 +29,18 @@ Since the project is at the moment incomplete I have broken the project into 3 c
 
 
   ### Early Corn
-  **Analysis** Here are some tests that were performed on corn that was planted at 80 cm spacing. This test the model's ability for precision when the plants are small and its ability to detect when there are few rows in the frame. 
+  **Analysis** Here are some tests that were performed on corn that was planted at 80 cm spacing. This test the model's ability for precision when the plants are small and its ability to detect when there are few rows in the frame. It is evident in these samples that the detection requires more work to on samples with broad spacing and nuances with the vanishing point location (shown sample 1). The resolution to these issues will be added when the following two modules are created: 
+    1. Proximal line search: For each detected line (including to ones indication a missed line in the initial detection) this module will process the parts of the image that around the line to ensure the line is centered in the row and to determine where the vanishing point may be from the slope of the row. 
+    2. Previous Vanishing Point: In video data this module will consider the location of the vanishing point from the past frame and use that as the vanishing point for the next frame. 
+  *Note* The images are links to videos
+
+  [![Corn detection sample 1](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/corn_detect_1_vid_face.png?raw=true)](https://youtu.be/5f2KKNgRbH0)
+  [![Corn detection sample 2](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/corn_detect_2_vid_face.png?raw=true)](https://youtu.be/VGHKuh_6SN4)
+  [![Corn detection sample 3](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/corn_detect_3_vid_face.png?raw=true)](https://youtu.be/4nv9RsXS6kk)
+  [![Corn detection sample 4](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/corn_detect_4_vid_face.png?raw=true)](https://youtu.be/P-VutRmEgPk)
+  [![Corn detection sample 5](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/corn_detect_5_vid_face.png?raw=true)](https://youtu.be/spYNIlot6pk)
+  [![Corn detection sample 6](https://github.com/JoelWeberDev/agricultural_crop_row_detection/blob/main/Demonstration_data/Readme_images/corn_detect_6_vid_face.png?raw=true)](https://youtu.be/95isImccxFQ)
+  
 
  ### Color Layer Approach:
  **Description** The model is currently using a series of layers that progressively separate all the pixels that lie within a specific sliver of the green color hue. A line detection algorithm is performed on one each of these layers independently. The lines from each of these layers are brought together into one frame where they are filtered by line gradient and the areas of the image that have the highest density of lines are identified as the next probable crop rows within the image frame. *Note* This will be the approach that is used with stereo vision except instead of detection being applied to zones of green pixels the heights in a [topographic](https://en.wikipedia.org/wiki/Topographic_map) frame constructed by the stereo camera will be used. 
