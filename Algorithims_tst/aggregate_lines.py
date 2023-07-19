@@ -24,6 +24,7 @@ import numpy as np
 import cv2
 import math
 import itertools
+import warnings 
 
 try:
     sys.path.append(os.path.abspath(os.path.join('.')))
@@ -192,9 +193,11 @@ class ag_lines(object):
         try:
             res = list(itertools.chain(*scored_grps[max_score[1]]))
         except IndexError:
-            ic(len(scored_grps))
-
-            res = []
+            warnings.warn("No lines were found in the image")
+            if ret_ranked_grps:
+                return scored_grps, scores,None
+            else:
+                return None,[]
 
         if ret_ranked_grps:
             return scored_grps, scores,scored_grps[max_score[1]]
@@ -328,6 +331,8 @@ def lines_from_db():
 
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     # bad_lines = np.array([[
     #     [ -3.09756098,  -8.        ],
     #     [1, 2334],

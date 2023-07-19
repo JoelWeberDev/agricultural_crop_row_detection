@@ -41,7 +41,7 @@
                 360
             ]
         },
-        "color_range": {
+        "hsv_range": {
             "lower": [
                 30,
                 50,

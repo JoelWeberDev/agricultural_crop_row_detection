@@ -106,6 +106,8 @@ class group_lns(object):
 
 
 if __name__ ==  "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     gr = group_lns()
     lines = np.array([[ -3.09756098,  -8.        ],
                   [ -2.7826087 , -66.        ],

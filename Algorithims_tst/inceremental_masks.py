@@ -439,5 +439,7 @@ def main():
     disp(dataCont, hough_test)
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     # main()
     test_get_pts()

@@ -48,7 +48,6 @@ class data_save(object):
             return False
 
     def save_data(self, data, dtype, des_path = "", data_title = None, save_type = None):
-        # print(self.get_time())
         self.data_title = data_title if data_title else "test_{}".format(self.get_time())
         self.des_path = os.path.abspath(des_path)
 
@@ -129,12 +128,8 @@ class data_save(object):
             # cv2.destroyAllWindows()
         else:
             for frame in vid:
-                # cv2.imshow('frame', frame)
-                # if cv2.waitKey(1) & 0xFF == ord('q'):
-                #     break
                 out.write(frame)
             out.release()
-            # cv2.destroyAllWindows()
 
         assert self.verify_success(path), "video was not saved correctly"
         
@@ -231,6 +226,8 @@ def test_vids():
     pass
     
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     from prep_input import interpetInput as prep 
     from display_frames import display_dec as disp
     from Image_Processor import apply_funcs as pre_process 

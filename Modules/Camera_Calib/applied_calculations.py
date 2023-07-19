@@ -36,7 +36,8 @@ class generic(object):
       self.cam_access = cam.loaded_cam
 
       vp_name = "vanishing_point{}x{}".format(self.img_sz[0],self.img_sz[1])
-      self.vanishing_point= self.cam_access.data[self.cam_access.find_key(vp_name)][vp_name]
+      self.vanishing_point = self.cam_access.find_key(vp_name,True)
+      # self.vanishing_point= self.cam_access.data[self.cam_access.find_key(vp_name)][vp_name]
 
       self.vp_calculator = cam.vanishing_point_calculator()
 
@@ -132,6 +133,8 @@ class generic(object):
       plt.show()
 
 if __name__ == "__main__":
+  import system_operations as sys_op
+  sys_op.system_reset()
   from Chess_board_calib import project_pts
   g = generic()
   # print(g.get_distance_from_point(np.array([-574,0,207]), 1149.5, units = "mm"))

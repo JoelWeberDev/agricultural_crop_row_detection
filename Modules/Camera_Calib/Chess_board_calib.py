@@ -4,9 +4,20 @@ import glob
 import math
 import os
 
+
+try:
+    from json_interaction import load_json
+except ModuleNotFoundError:
+    import sys, os
+    sys.path.append(os.path.abspath(os.path.join('.')))
+    from Modules.json_interaction import load_json
+
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
+params = load_json('Modules/Camera_Calib/Cam_specs_dict.json', True)
+intr = np.array(params.find_key('intrinsic_params',True))
+img_shape = params.find_key('im_dims',True)
 
 def calibrate(dirpath='Test_imgs/Chess_imgs/*jpg', prefix='calib', image_format='jpg', square_size=32, width=9, height=6):
     """ Apply camera calibration operation for images in the given directory path. """
@@ -76,11 +87,10 @@ def project_pts(lines = np.array([[10,1000,1],[10,1000,10],[-10,1000,1],[-10,100
     # return np.array([[pts_2d[i]*(1-undis_pts[i])] for i in range(len(pts_2d))])
 
     if ret_shape:
-        return pts_2d.reshape(-1,2),calibrate()[2]
+        return pts_2d.reshape(-1,2),img_shape
     return pts_2d.reshape(-1,2)
 
-def manual_proj(rot,trans = np.array([0,0,0]),pts3d=np.array([[10,1000,1],[10,1000,10],[-10,1000,10],[-10,1000,100]],dtype=np.float32),intr = calibrate()[0],ret_shape = False):
-
+def manual_proj(rot,trans = np.array([0,0,0]),pts3d=np.array([[10,1000,1],[10,1000,10],[-10,1000,10],[-10,1000,100]],dtype=np.float32),ret_shape = False):
 
     def non_hom_coords(pt3d):
         p1 = intr @ rot
@@ -103,14 +113,21 @@ def manual_proj(rot,trans = np.array([0,0,0]),pts3d=np.array([[10,1000,1],[10,10
         return coords.ravel()
 
     if ret_shape:
-        return np.array([non_hom_coords(pt) for pt in pts3d]),calibrate()[2]
+        return np.array([non_hom_coords(pt) for pt in pts3d]),img_shape
     return np.array([non_hom_coords(pt) for pt in pts3d])
+
+
+def write_to_json():
+    mat, dist, shape = calibrate()
+
+    calib_params = {'intrinsic_params':mat,'distortion_coefficients':dist, 'im_dims':shape}
+    params.write_json(calib_params)
+    
 
 
 def test_chess_calib():
     # Test chessboard calibration
     mat, dist, shape = calibrate()
-
     print(mat, dist, shape)
 
 def test_manual_proj():
@@ -128,5 +145,7 @@ def test_proj_pts():
     print(project_pts().reshape(-1,2))
 
 if __name__ == '__main__':
-
-    test_chess_calib()
+    import system_operations as sys_op
+    sys_op.system_reset()
+    # test_chess_calib()
+    write_to_json()

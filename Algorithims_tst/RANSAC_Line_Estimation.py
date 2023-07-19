@@ -179,4 +179,6 @@ def test():
     disp(dataCont, model.ransac_rows)
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     test()

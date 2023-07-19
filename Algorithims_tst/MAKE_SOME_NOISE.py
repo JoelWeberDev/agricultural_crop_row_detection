@@ -14,7 +14,7 @@ from icecream import ic
 
 
 # The size paramters must be odd values since the points will define a center point
-def noise(img, noise_pts= 3000, min_pt_sz = 1 , max_pt_sz = 11):
+def noise(img, noise_pts=5000, min_pt_sz = 1 , max_pt_sz = 11):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     upper=np.array([75,255,255])
     lower = np.array([30,50,50])
@@ -47,6 +47,8 @@ def test(img):
 
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     import sys, os
     sys.path.append(os.path.abspath(os.path.join('.')))
     from Modules.prep_input import interpetInput as prep

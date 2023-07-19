@@ -81,7 +81,7 @@ def loadSampleImages(**kwargs):
 
     def isVideo(file):
         # print(os.path.splitext(file)[1])
-        if os.path.splitext(file)[1] in {'.avi', '.MP4', '.mov'}:
+        if os.path.splitext(file)[1] in {'.avi', '.MP4', '.mov', '.mp4'}:
             return True
         return False
     
@@ -113,4 +113,6 @@ def test():
     # disp.display_dec(interpetInput('live'))
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     test()

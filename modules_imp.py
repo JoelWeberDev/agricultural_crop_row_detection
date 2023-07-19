@@ -90,6 +90,8 @@ class mm(object):
 
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     mod_imp = mm()
     # print(globals())
     # mod_imp.mods_to_json()

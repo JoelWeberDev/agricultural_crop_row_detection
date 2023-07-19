@@ -239,12 +239,16 @@ class disp_shape(object):
         else:
             return dtype[0](change_iterable(val,1))
 
-def write_annotations(annotations):
+# Using the write path is recomended becasue the default write will overwrite the default parameters
+def write_annotations(annotations, write_path=None):
     import sys, os
     sys.path.append(os.path.abspath(os.path.join('.')))
     from Adaptive_params.Adaptive_parameters import param_manager as pm
 
     pm = pm()
+    if type(write_path) !=  type(None):
+        pm.update("parameter path", write_path,title="Current Settings",universal=True)
+        assert pm.access("parameter path", universal=True) == write_path, "Path not set correctly"
     ic(annotations)
     # pm.update("calc_vals",annotations,"calc_vals")
     for key,annot in annotations.items():
@@ -314,29 +318,59 @@ class proc_annotations(object):
         self.annot_info["annotated_green"] = 0
         self.annot_info["all_annot_pts"] = 0
 
-        bot_width_pxl, top_width_pxl, bot_width_mm, top_width_mm = 0,0,0,0
+        # bot_width_pxl, top_width_pxl, bot_width_mm, top_width_mm = 0,0,0,0
+        widths = [0,0,0,0]
 
-        for annot in self.annotations:
-            i = self.annot_info["row_num"]
-            res,good_ln =  self.proc_row(annot) 
-            self.annot_info["annotated_green"] += res["green_pts"]
-            self.annot_info["all_annot_pts"] += res["tot_pts"]
-            if good_ln:
-                self.annot_info["row {}".format(i)] = res
-                if i != 0:
-                    self.annot_info["spacing_mm"].append(self._calc_row_disparity(res["bot_center"],self.annot_info["row {}".format(i-1)]["bot_center"]))
-                    self.annot_info["spacing_pxls"].append(abs(res["bot_center"][0]-self.annot_info["row {}".format(i-1)]["bot_center"][0]))
+        proced_lns = np.array([self.proc_row(annot) for annot in self.annotations])
+        self.annot_info["annotated_green"] = np.sum([ln[0]["green_pts"] for ln in proced_lns])
+        self.annot_info["all_annot_pts"] = np.sum([ln[0]["tot_pts"] for ln in proced_lns])
+        ic(self.annot_info["annotated_green"],self.annot_info["all_annot_pts"])
 
-                bot_width_pxl += res["bot_width_pxls"]
-                top_width_pxl += res["top_width_pxls"]
-                bot_width_mm += res["bot_width_mm"]
-                top_width_mm += res["bot_width_pxls"] 
-                self.annot_info["row_num"] += 1
+        inside_lns = proced_lns[np.where(proced_lns[:,1] == True)[0]][:,0]
+        outside_lns = proced_lns[np.where(proced_lns[:,1] == False)[0]][:,0]
+        # inside_lns = proced_lns[inside_inds][:,0]
 
-        self.annot_info["avg_bot_width_pxl"] = bot_width_pxl/self.annot_info["row_num"]
-        self.annot_info["avg_top_width_pxl"] = top_width_pxl/self.annot_info["row_num"]
-        self.annot_info["avg_bot_width_mm"] = bot_width_mm/self.annot_info["row_num"]
-        self.annot_info["avg_top_width_mm"] = top_width_mm/self.annot_info["row_num"]
+        # outside_lns = proced_lns[~inside_inds][:,0]
+
+        self.annot_info["row_num"] = len(inside_lns)
+
+        if len(inside_lns) > 1:
+            for i,res in enumerate(inside_lns):
+                spaced_vals = self.annot_calcs(res,i)
+                for j in range(4):
+                    widths[j] += spaced_vals[j]
+                if i > 0:
+                    self.annot_info["spacing_pxls"].append(spaced_vals[4])
+                    self.annot_info["spacing_mm"].append(spaced_vals[5])
+        
+        elif len(inside_lns) + len(outside_lns) > 1:
+            for i,res in enumerate(proced_lns):
+                spaced_vals = self.annot_calcs(res,i)
+                for j in range(4):
+                    widths[j] += spaced_vals[j]
+                if i > 0:
+                    self.annot_info["spacing_pxls"].append(spaced_vals[4])
+                    self.annot_info["spacing_mm"].append(spaced_vals[5])
+
+        else:
+            raise ValueError("Fewer that 2 rows were found in the image. Please annotate more rows or attempt a different image")
+
+        # for annot in self.annotations:
+        #     proced_lns.append(self.proc_row(annot))
+        #     self.annot_info["annotated_green"] += res["green_pts"]
+        #     self.annot_info["all_annot_pts"] += res["tot_pts"]
+            # Determined by whether or not the intercept at the base of the image is within the image +-5%
+
+            
+
+        assert self.annot_info["row_num"] > 0, "No rows were found in the image"
+        avg = lambda s: s/ self.annot_info["row_num"] 
+
+        self.annot_info["avg_bot_width_pxl"] = avg(widths[0])
+        self.annot_info["avg_top_width_pxl"] = avg(widths[1])
+        self.annot_info["avg_bot_width_mm"] = avg(widths[2])
+        self.annot_info["avg_top_width_mm"] = avg(widths[3])
+
         if len(self.annot_info["spacing_mm"]) > 0:
             self.annot_info["avg_spacing_mm"] = int(np.average(self.annot_info["spacing_mm"]))
             self.annot_info["avg_spacing_pxls"] = int(np.average(self.annot_info["spacing_pxls"]))
@@ -352,6 +386,18 @@ class proc_annotations(object):
             plt.subplot(1,1,1)
             plt.imshow(self.disp_im)
             plt.show()
+
+    def annot_calcs(self,res,i):
+        self.annot_info["row {}".format(i)] = res
+        if i != 0:
+            # self.annot_info["spacing_mm"].append(self._calc_row_disparity(res["bot_center"],self.annot_info["row {}".format(i-1)]["bot_center"]))
+            spacing_mm = (self._calc_row_disparity(res["bot_center"],self.annot_info["row {}".format(i-1)]["bot_center"]))
+            spacing_pxls = (abs(res["bot_center"][0]-self.annot_info["row {}".format(i-1)]["bot_center"][0]))
+            # self.annot_info["spacing_pxls"].append(abs(res["bot_center"][0]-self.annot_info["row {}".format(i-1)]["bot_center"][0]))
+        else:
+            spacing_mm, spacing_pxls = 0,0
+
+        return (res["bot_width_pxls"], res["top_width_pxls"], res["bot_width_mm"], res["bot_width_pxls"],spacing_pxls ,spacing_mm)
 
     def add_json(self):
         for key,val in self.annot_info.items():
@@ -396,9 +442,6 @@ class proc_annotations(object):
         in_marg = 0.05
         fr_range = (-1*self.img.shape[1]*in_marg,self.img.shape[1]*(1+in_marg))
         ic(lc.in_range(h_ext_pts[1][0][0],fr_range)[0] ,lc.in_range(h_ext_pts[1][1][0],fr_range)[0])
-        if not (lc.in_range(h_ext_pts[1][0][0],fr_range)[0] and lc.in_range(h_ext_pts[1][1][0],fr_range)[0]):
-            ic("bad line",h_ext_pts)
-            return cur_info, False
         
 
         # set the calculated values
@@ -414,6 +457,9 @@ class proc_annotations(object):
         cur_info["bot_width_mm"] = self._calc_row_disparity(h_ext_pts[1][0],h_ext_pts[1][1])
         cur_info["top_width_mm"] = self._calc_row_disparity(h_ext_pts[0][0],h_ext_pts[0][1])
                 
+        if not (lc.in_range(h_ext_pts[1][0][0],fr_range)[0] and lc.in_range(h_ext_pts[1][1][0],fr_range)[0]):
+            ic("bad line",h_ext_pts)
+            return cur_info, False
 
         # ic(cur_info)
 
@@ -515,17 +561,17 @@ def test(img):
     # return proc_annotations(img,img_interact.annotations).json_info
     return proc_annotations(img,test_annots).json_info
 
-def video_main(data=None):
-    vids = prep('sample',"C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Images/Drone_files/Winter_Wheat_vids") if type(data) == type(None) else data 
-    cap = vids['vids'][0]
+def video_main(vid, write_path = None):
+    cap = vid
     ret, frame = cap.read()
-    main(frame)
+    json_path = main(frame,write_path=write_path)
     cap.release() 
+    return json_path
 
-def main(img):
+def main(img, write_path = None):
     img_interact = image_interaction(img)
     img_interact.prep_plot()
-    json_path = write_annotations(proc_annotations(img,img_interact.annotations).json_info)
+    json_path = write_annotations(proc_annotations(img,img_interact.annotations).json_info,write_path)
     return json_path
 
 def test_without_writing(img):
@@ -534,6 +580,8 @@ def test_without_writing(img):
     return proc_annotations(img,img_interact.annotations).json_info
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     from prep_input import interpetInput as prep 
     from display_frames import display_dec as disp
 
@@ -541,9 +589,9 @@ if __name__ == "__main__":
 
 
     data = prep('sample',drones)
-    # test_without_writing(data['imgs'][0])
-    # main(data['imgs'][0])
-    write_annotations(test(data['imgs'][0]))
+    # test_without_writing(test(data['imgs'][0]))
+    main(data['imgs'][0])
+    # write_annotations(test(data['imgs'][0]))
 
     # read the first frame of the video
     # write_annotations(proc_annotations(frame,real_annotations(frame)).json_info)

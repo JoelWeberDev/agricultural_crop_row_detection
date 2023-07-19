@@ -49,10 +49,9 @@ except ModuleNotFoundError or ImportError:
     sys.path.append(os.path.abspath(os.path.join('.')))
     from Modules.json_interaction import load_json
 
-# loaded_cam = load_json('C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Cascade_Classifier/Modules/Camera_Calib/Camara_specifications.json')
-# camera_data = loaded_cam.data[0]
-loaded_cam = load_json("C:/Users/joelw/OneDrive/Documents/GitHub/Crop-row-recognition/Cascade_Classifier/Modules/Camera_Calib/Cam_specs_dict.json",dict_data=True)
-camera_data = loaded_cam.data["camera_vals"]
+loaded_cam = load_json("Modules\\Camera_Calib\\Cam_specs_dict.json",dict_data=True)
+print(loaded_cam.data.keys())
+camera_data = loaded_cam.data["camera_data"]
 
 class formal_calib(object): 
     def __init__(self):
@@ -87,7 +86,8 @@ class formal_calib(object):
     
     def update_params(self):
         self.calc_projection()
-        calib_params = {'intrinsic_params':self.inring.iX,'extrinsic_params':self.extring.params}
+        chess.write_to_json()
+        calib_params = {'extrinsic_params':self.extring.params}
         loaded_cam.write_json(calib_params)
     
     def mat_vector_mult(self, mat, vec , iters = None):
@@ -137,7 +137,10 @@ class intrinsics(formal_calib):
         # self.cam_const_pxl = self.cam_const*self.pxl_per_mm
         # self.iX = np.array([[self.cam_const_pxl,0,self.cam_res[0]/2],[0,self.cam_const_pxl,self.cam_res[1]/2],[0,0,1]]) 
 
-        self.iX, self.dist,img = chess.calibrate()
+        self.iX = np.array(loaded_cam.find_key('intrinsic_params',True))
+        self.dist = np.array(loaded_cam.find_key('distortion_coefficients',True))
+        self.img_sz = np.array(loaded_cam.find_key('im_dims',True))
+
         # MM
         # self.iX = np.array([[self.cam_const_pxl,0,self.cam_res[0]/(2*self.pxl_per_mm)],[0,self.cam_const_pxl,self.cam_res[1]/(2*self.pxl_per_mm)],[0,0,1]])
         
@@ -486,12 +489,16 @@ def conventional_calculator():
     plt.show()
 
 def formal_calculator():
-    vp_calc = vanishing_point_calculator()
-    vp_calc.update_vp()
-    print(vp_calc.vanish_point)
+    # vp_calc = vanishing_point_calculator()
+    # vp_calc.update_vp()
+    # print(vp_calc.vanish_point)
+    form  = formal_calib()
+    form.update_params()
 
 
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     # conventional_calculator()
     formal_calculator()

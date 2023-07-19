@@ -79,10 +79,9 @@ class data_base_manager(object):
         diff = abs(new_data.shape[0] - dshp[0])
         mt_space = [np.nan]*diff
         cur_ind = self._find_max_index(df) +1
-        if dshp[0] < new_data.shape[0]:
+        if dshp[0] > 0 and dshp[0] < new_data.shape[0]:
             new_df[f"sl{cur_ind}"] = new_data[:,0]
             new_df[f"int{cur_ind}"] = new_data[:,1]
-            ic(dshp)
             for i in np.arange(0,cur_ind):
                 ic(i)
                 new_df[f"sl{i}"] = df[f"sl{i}"].values.tolist() + mt_space
@@ -171,5 +170,9 @@ def read_winter_wheat():
 
 
 if __name__ == "__main__":
-    test()
-    # read_winter_wheat()
+    import sys, os
+    sys.path.append(os.path.abspath(os.path.join('.')))
+    import system_operations as sys_op
+    sys_op.system_reset()
+    # test()
+    read_winter_wheat()

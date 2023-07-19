@@ -79,6 +79,11 @@ def display_dec(data, func = None,dispOrg = False,**kwargs):
                 return True, detected_frames 
             elif cv2.waitKey(1) & 0xFF == ord('n'):
                 break
+            elif cv2.waitKey(10) & 0xFF == ord('e'):
+                import system_operations as sys_op
+                sys_op.system_reset()
+                sys.exit()
+            
         sample.release()
         cv2.destroyAllWindows()
         return True, detected_frames 
@@ -90,6 +95,13 @@ def display_dec(data, func = None,dispOrg = False,**kwargs):
                 return True
             elif cv2.waitKey(10) & 0xFF == ord('n'):
                 return False
+            elif cv2.waitKey(10) & 0xFF == ord('e'):
+                import system_operations as sys_op
+                sys_op.system_reset()
+                sys.exit()
+            elif cv2.waitKey(10) & 0xFF == ord('s'):
+                name = input("Enter the name of the file: ")
+                cv2.imwrite(f'{name}.png',list(sample.values())[0])
 
     def start_display(data):
         ret = []
@@ -134,7 +146,7 @@ b = False
 def dispMat(imCol):
     sq = len(imCol)**(1/2)
     for i,imKey in enumerate(imCol.keys()):
-        plt.subplot(round(sq),math.ceil(sq),i+1)
+        plt.subplot(int(sq),math.ceil(sq),i+1)
         try:
             rgbIm = cv2.cvtColor(imCol[imKey], cv2.COLOR_BGR2RGB)
             plt.plot(),plt.imshow(rgbIm) 
@@ -163,6 +175,10 @@ def onPress(event):
         plt.savefig('test.png')
         print('saved')
         sys.stdout.flush()
+    elif event.key == "e":
+        import system_operations as sys_op
+        sys_op.system_reset()
+        sys.exit()
 
 def onClick(event):
     print('click', event.button)

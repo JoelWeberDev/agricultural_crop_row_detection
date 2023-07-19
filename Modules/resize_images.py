@@ -51,6 +51,8 @@ def resize_images(img, **kwargs):
     
 # Test
 if __name__ == '__main__':
+    import system_operations as sys_op
+    sys_op.system_reset()
     # Get images
     images = prep.interpetInput(dataType='sample', path = 'Resized_Imgs')
     # Resize images

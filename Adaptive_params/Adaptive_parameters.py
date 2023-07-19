@@ -209,6 +209,8 @@ Functions for variables:
      - spacing between rows
      - max number of rows
 
+Kernel size:
+    Description: Determine from spacing and row width both the vertical and horizontal kernel size 
 
 
 
@@ -245,30 +247,41 @@ path = 'Adaptive_params/Adaptive_values.json'
 # The uiversal settings simply assist in ensuring that the correct parameters are loaded when there are other preconfigured json files with a testing data set
 class param_manager(object):
     def __init__(self):
-        self.uiversal_settings = load_json("Adaptive_params/parent_setting.json",dict_data=True)
-        self.path = self.uiversal_settings.find_key("parameter path", ret_val=True)
+        uni_path = "Adaptive_params/parent_setting.json"
+        assert os.path.exists(uni_path), "The path {uni_path} does not exist".format(path)
+
+        self.universal_settings = load_json(uni_path,dict_data=True)
+        self.path = self.universal_settings.find_key("parameter path", ret_val=True)
+        try:
+            assert os.path.exists(self.path), "The path {} does not exist".format(self.path)
+        except AssertionError:
+            self.universal_settings.write_json({"parameter path": path}, "Current Settings")
+            self.path = self.access("parameter path", universal=True)
+
         self.data = load_json(self.path,dict_data=True)
 
     def access(self, key, universal=False):
-        data = self.uiversal_settings if universal else self.new_data()
+        data = self.universal_settings if universal else self.new_data()
         val = data.find_key(key, ret_val=True)
 
-        assert val != -1, "The key {} does not exist".format(key)
+        
+        assert val != -1, "The key '{}' does not exist".format(key)
         return val
 
     def update(self, key, val,title=None, universal=False):
-        data = self.uiversal_settings if universal else self.new_data()
-        if universal and key == "parameter path":
-            self.new_data() 
-            self.path = val
+        data = self.universal_settings if universal else self.new_data()
         try:
             data.write_json({key:val},data_title=title)
         except Exception as e:
-            # ic(key, val, title, e)
             data.write_json({key:val},data_title=title)
 
+        if universal and key == "parameter path":
+            self.new_data() 
+            assert os.path.exists(val), "The path {} does not exist".format(val)
+            self.path = val
+
     def new_data(self):
-        latest_path = self.uiversal_settings.find_key("parameter path", ret_val=True)
+        latest_path = self.universal_settings.find_key("parameter path", ret_val=True)
         if self.path != latest_path:
             ic(latest_path, self.path)
             self.path = latest_path
@@ -434,6 +447,7 @@ def annotations_for_test(test_path):
 
 class testing(object):
     def __init__(self):
+        from Modules.save_results import data_save as save
         self.saver = save()
         self.test_paths = [
             "Adaptive_params\\tests\\small_corn",
@@ -462,7 +476,7 @@ class testing(object):
                 assert os.path.exists(new_path), "Json file was not copied correctly"
                 js_path = new_path
 
-            self.params.update("parameter path", js_path, title="user_input", universal=True)
+            self.params.update("parameter path", js_path, title="Current Settings", universal=True)
             self._test_json_loads(js_path)
             samples = disp(imgs, inc_color_mask)
             # samples = disp(imgs, inc_color_mask, disp_cmd = "final")
@@ -493,8 +507,21 @@ def test():
     test = testing()        
     test.image_tests()
 
+# Generate some tests that will determine if there are issues in accessing the correct json file between modules.  
+"""
+    1. Test that the json file is loaded correctly from the image annotation module
+    2. Switch the parameters from the parent json.
+    3. Determine if the parameters that are being processed are the same as the ones in the parent json file.
+    4. Check correct path update on accessing a parameter.
+"""
+def test_parameter_switch():
+    pass
+    
+
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     import sys, os 
     from icecream import ic
     from Modules.prep_input import interpetInput as prep 

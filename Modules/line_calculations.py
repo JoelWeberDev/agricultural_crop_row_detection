@@ -34,6 +34,18 @@ def calc_x_val(line,y):
 def calc_pts(slope,intercept):
     return np.array([[0,intercept],[calc_x_val([slope,intercept],0),0]])
 
+def bot_interc_ln_pts(slope, intercept, im_shape):
+    try:
+        zero_int = -1*round(im_shape[0] - (slope*intercept))
+        x1 = round(zero_int/slope)
+    except OverflowError:
+        print("Overflow Error", slope, intercept)
+        x1 = round(intercept)
+    y1 = 0
+    x2 = round(intercept)
+    y2 = im_shape[0]
+    return (x1,y1,x2,y2)
+
 def calc_line(pt1,pt2):
     slope = calc_slope(pt1,pt2)
     intercept = calc_intercept(slope,pt1)
@@ -274,4 +286,6 @@ def clock_sort_test():
     # sorter.optimize_area(sorter.pts)
 
 if __name__ == "__main__":
+    import system_operations as sys_op
+    sys_op.system_reset()
     clock_sort_test()
