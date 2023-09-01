@@ -212,6 +212,13 @@ Functions for variables:
 Kernel size:
     Description: Determine from spacing and row width both the vertical and horizontal kernel size 
 
+    Independant variables:
+        - rw row width
+        - s model sensitivity
+        - cr Coefficient of reduction: This is a hard-coded value that will simply take reduce the size of the kernel by a specific ratio
+
+    Function:
+        - ksv = int(rw*cr)*1+s
 
 
 """
@@ -440,6 +447,7 @@ class value_calculations(object):
 
     def perc_diff(self, val1, val2):
         return abs(val1-val2)/val1
+
 
 def annotations_for_test(test_path):
     from Modules.image_annotation import main 

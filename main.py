@@ -81,10 +81,11 @@ class testing(object):
         self.samples = prim.sample_modes()
 
         self.sample_funcs = {
-            "image_detection": self.samples.detection_on_image,
-            "video_detection": self.samples.detection_on_video,
+            "inc_color_imgs": self.samples.detection_on_image,
+            "inc_color_vids": self.samples.detection_on_video,
             "specific_frames": self.samples.specific_frames,
-            "calibrate": self.samples.calibrate
+            "calibrate": self.samples.calibrate,
+            "kernel": self.samples.kernel
         }
 
     # *Note: For the data samples to work the images must be included in a folder labeled "imgs" and the json file must be labeled "test.json" videos must be labeled "vids"
@@ -92,6 +93,12 @@ class testing(object):
     def image_tests(self, specific_frames=None, **kwargs):
         save = kwargs.get("save", False)
         save_lns = kwargs.get("save_lns", False)
+        apply_kernel = kwargs.get("kernel", False)
+
+        assert isinstance(save, bool), "The save argument must be a boolean"
+        assert isinstance(save_lns, bool), "The save_lns argument must be a boolean"
+        assert isinstance(apply_kernel, bool), "The kernel argument must be a boolean"
+
         vids = []
 
         for test, data_type in self.test_paths:
@@ -104,7 +111,10 @@ class testing(object):
                 self.samples.data["imgs"] = data_cont
                 self.new_params(test, data_type, data_cont["imgs"])
                 # samples = disp(data_cont, prim.inc_color_mask)
-                self.apply_func("image_detection",**kwargs)
+                if apply_kernel:
+                    self.samples.kernel(d_key="imgs",**kwargs)
+                else:
+                    self.apply_func("inc_color_imgs",**kwargs)
 
             elif data_type == "vids":
                 ic(os.listdir(data_path))
@@ -132,8 +142,10 @@ class testing(object):
                     elif type(specific_frames) != type(None):
                         samples = self.apply_func("specific_frames",frame_range=specific_frames, vid_ind=i, **kwargs)
 
+                    elif apply_kernel:
+                        samples = self.apply_func("kernel",**kwargs)
                     else:
-                        samples = self.apply_func("video_detection",**kwargs)
+                        samples = self.apply_func("inc_color_vids",**kwargs)
                         # samples = disp(data_cont, prim.inc_color_mask, video = True, noise_tst = 0, disp_cmd = "final")
 
                     if save:
@@ -206,7 +218,10 @@ if __name__ == "__main__":
     import system_operations as sys_op
     sys_op.system_reset()
     td = testing()
-    td.image_tests(noise_tst=0, specific_frames=(10,215), video = True, disp_cmd = "final")
-    # td.image_tests(noise_tst=0, disp_cmd="final")
+    # td.image_tests(noise_tst=0,  specific_frames=(10,215), video = True)
+    td.image_tests(noise_tst=1000, disp_cmd="final", apply_mask=True)
+    # td.image_tests(noise_tst=0, kernel = True, apply_mask=True, apply_noise=True, disp_cmd="all")
     # td.image_tests(noise_tst=0, disp_cmd="final", save=True)
     # td.image_tests(noise_tst=50000)
+
+    

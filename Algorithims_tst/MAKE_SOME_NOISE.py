@@ -15,6 +15,9 @@ from icecream import ic
 
 # The size paramters must be odd values since the points will define a center point
 def noise(img, noise_pts=5000, min_pt_sz = 1 , max_pt_sz = 11):
+    noise_pts = round(noise_pts)
+    min_pt_sz = round(min_pt_sz)
+    max_pt_sz = round(max_pt_sz)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     upper=np.array([75,255,255])
     lower = np.array([30,50,50])

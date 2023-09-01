@@ -1,7 +1,7 @@
 # ignore any video type
 # ignore any file in a directory called save_tests
 saved_tests/*
-# ignore __pycache__ directories
-__pycache__/*
+# ignore all .pyc files
+*.pyc
 # ignore .vscode directory
 .vscode/*

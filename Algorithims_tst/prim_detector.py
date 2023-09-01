@@ -32,6 +32,7 @@ from Modules.Image_Processor import apply_funcs as pre_process
 
 import system_operations as sys_ops
 from Algorithims_tst.aggregate_lines import ag_lines as agl
+from Modules.strong_horz_kernel import kerneling as kern
 
 from Adaptive_params import Adaptive_parameters as ap
 from Algorithims_tst.MAKE_SOME_NOISE import noise 
@@ -263,19 +264,20 @@ class sample_modes(object):
                 "imgs":data
             }
         assert type(self.data["vids"]) == dict and type(self.data["imgs"]) == dict, "The data must be a dictionary with the keys 'vids' and 'imgs'"
+        self.kern = kern()
     # This will save the detected lines to a csv file where the data can be easily loaded for testing purposes
     def save_lines_csv(self, sample_type = "vids", csv_fname = "winter_wheat.csv"):
         data_base = save_lns(data_name=csv_fname)
         return disp(self.data[sample_type], inc_color_mask, hough_cmd = "avg", disp_cmd = "disp_steps", save_lns = data_base)
     
     def detection_on_video(self, **kwargs):
-        if "video" not in kwargs:
-            kwargs["video"] = True
+        # if "video" not in kwargs:
+        #     kwargs["video"] = True
         return disp(self.data["vids"], inc_color_mask ,**kwargs )
 
     def detection_on_image(self, **kwargs):
-        if "video" not in kwargs:
-            kwargs["video"] = False 
+        # if "video" not in kwargs:
+        #     kwargs["video"] = False 
         return disp(self.data["imgs"], inc_color_mask , **kwargs)
         
     def calibrate(self, dataCont,**kwargs):
@@ -283,6 +285,10 @@ class sample_modes(object):
 
     def specific_frames(self, d_key='vids', frame_range = (280, 307), vid_ind=0, **kwargs):
         return frames_of_concern(self.data[d_key], frame_range=frame_range, vid_ind=0, **kwargs)
+
+    # this requires the row width and spacing to be provided in to caluclate what the kernel breadth should be 
+    def kernel(self, d_key='vids', **kwargs):
+        return disp(self.data[d_key], self.kern.apply_kernel, **kwargs)
 
     # def save_sample(self, )
 
